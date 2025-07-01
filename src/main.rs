@@ -3,11 +3,9 @@ use crate::data_struct::{BasicInfo, RealTimeInfo};
 use futures::{SinkExt, StreamExt};
 use log::{debug, error, info};
 use std::process::exit;
-use std::thread;
 use std::time::Duration;
 use sysinfo::CpuRefreshKind;
 use systemstat::Platform;
-use tokio::join;
 use tokio::time::sleep;
 use tokio_tungstenite::tungstenite::{Message, Utf8Bytes};
 
@@ -48,7 +46,7 @@ async fn main() {
         }
     };
 
-    let basic_info = tokio::spawn(async move {
+    let _basic_info = tokio::spawn(async move {
         let mut sysinfo_sys = sysinfo::System::new();
         sysinfo_sys.refresh_cpu_specifics(CpuRefreshKind::nothing().without_cpu_usage());
         sysinfo_sys.refresh_memory();
@@ -62,7 +60,7 @@ async fn main() {
         }
     });
 
-    let real_time = tokio::spawn(async move {
+    let _real_time = tokio::spawn(async move {
         let ws_stream =
             if let Ok(ws) = connect_ws(&real_time_url, args.tls, args.ignore_unsafe_cert).await {
                 ws

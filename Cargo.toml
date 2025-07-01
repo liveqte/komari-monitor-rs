@@ -26,6 +26,8 @@ futures = { version = "0.3.31", default-features = false, features = ["std"]}
 [target.'cfg(target_os = "linux")'.dependencies]
 heim-virt = "0.1.0-alpha.1"
 
+[workspace.metadata.cross.target.aarch64-linux-android]
+image = "genshinmc/rust-cross-new-ndk-aarch64-linux-android:0.0.1"
 
 [profile]
 dev = { opt-level = 3 }
