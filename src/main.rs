@@ -3,6 +3,7 @@ use crate::data_struct::{BasicInfo, RealTimeInfo};
 use futures::{SinkExt, StreamExt};
 use log::{debug, error, info};
 use std::process::exit;
+use std::thread;
 use std::time::Duration;
 use sysinfo::CpuRefreshKind;
 use systemstat::Platform;
@@ -19,7 +20,7 @@ mod rustls_config;
 async fn main() {
     simple_logger::SimpleLogger::new()
         .with_colors(true)
-        .with_level(log::LevelFilter::Debug)
+        .with_level(log::LevelFilter::Info)
         .init()
         .unwrap();
     let args = Args::par();
@@ -88,5 +89,5 @@ async fn main() {
         }
     });
 
-    let _ = join!(basic_info, real_time);
+    sleep(Duration::from_secs(1000000)).await;
 }
