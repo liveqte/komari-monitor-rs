@@ -19,8 +19,8 @@ serde_json = { version = "1.0.140", default-features = false, features = ["std"]
 clap = { version = "4.5.40", default-features = false, features = ["std", "derive", "usage", "help"] }
 log = { version = "0.4.27", default-features = false, features = ["std"] }
 simple_logger = { version = "5.0.0", default-features = false, features = ["time", "colored", "colors"] }
-rustls = { version = "0.23.28", default-features = false, features = ["ring"] }
-rustls-pki-types = "1.12.0"
+#rustls = { version = "0.23.28", default-features = false, features = ["ring"] }
+#rustls-pki-types = "1.12.0"
 futures = { version = "0.3.31", default-features = false, features = ["std"]}
 
 [target.'cfg(target_os = "linux")'.dependencies]

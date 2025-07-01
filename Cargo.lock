@@ -821,8 +821,6 @@ dependencies = [
  "heim-virt",
  "log",
  "reqwest",
- "rustls",
- "rustls-pki-types",
  "serde",
  "serde_json",
  "simple_logger",

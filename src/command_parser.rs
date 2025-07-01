@@ -1,9 +1,7 @@
-use crate::rustls_config::create_dangerous_config;
 use clap::Parser;
-use std::sync::Arc;
 use tokio::net::TcpStream;
 use tokio_tungstenite::{
-    Connector, MaybeTlsStream, WebSocketStream, connect_async, connect_async_tls_with_config,
+    connect_async, connect_async_tls_with_config, MaybeTlsStream, WebSocketStream,
 };
 
 /// Komari Monitor Agent
@@ -62,7 +60,8 @@ pub async fn connect_ws(
                 url,
                 None,
                 false,
-                Some(Connector::Rustls(Arc::new(create_dangerous_config()))),
+                // Some(Connector::Rustls(Arc::new(create_dangerous_config()))),
+                None,
             )
             .await
             {
