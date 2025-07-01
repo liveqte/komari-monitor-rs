@@ -60,13 +60,14 @@ async fn main() {
         }
     });
 
-    let _real_time = tokio::spawn(async move {
+    loop {
         let ws_stream =
             if let Ok(ws) = connect_ws(&real_time_url, args.tls, args.ignore_unsafe_cert).await {
                 ws
             } else {
-                error!("无法连接到 Websocket 服务器");
-                exit(1);
+                error!("无法连接到 Websocket 服务器，5 秒后重新尝试");
+                sleep(Duration::from_secs(5)).await;
+                continue;
             };
 
         let (mut write, mut _read) = ws_stream.split();
@@ -82,10 +83,9 @@ async fn main() {
             let json = serde_json::to_string(&real_time).unwrap();
             debug!("RealTime: {}", json);
             if let Err(e) = write.send(Message::Text(Utf8Bytes::from(json))).await {
-                error!("推送 RealTime 时发生错误: {}", e);
+                error!("推送 RealTime 时发生错误，尝试重新连接: {}", e);
+                break;
             };
         }
-    });
-
-    sleep(Duration::from_secs(1000000)).await;
+    }
 }
