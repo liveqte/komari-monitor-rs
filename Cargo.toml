@@ -8,28 +8,27 @@ repository = "https://github.com/GenshinMinecraft/ak_monitor_client_rs"
 license = "WTFPL"
 
 [dependencies]
-tokio = { version = "1.42.0", default-features = false, features = ["rt-multi-thread", "macros", "time"] }
-tokio-tungstenite = { version = "0.27.0", default-features = false, features = ["rustls-tls-native-roots", "connect"] }
-sysinfo = { version = "0.35.2", default-features = false, features = ["disk", "system"] }
-systemstat = "0.2.4"
-whoami = { version = "2.0.0-pre.2", default-features = false }
-reqwest = { version = "0.12.21", default-features = false, features = ["rustls-tls", "json"] }
-serde = { version = "1.0.219", default-features = false, features = ["std", "derive"] }
-serde_json = { version = "1.0.140", default-features = false, features = ["std"] }
+tokio = { version = "1.46.0", default-features = false, features = ["rt", "macros", "time", "process"] }
+rustls = { version = "0.23.28", default-features = false, features = ["ring"] }
+rustls-pki-types = "1.12.0"
+futures = { version = "0.3.31", default-features = false, features = ["std"] }
+
+miniserde = { version = "0.1.42", default-features = false, features = ["std"] }
+tokio-tungstenite = { version = "0.27.0", default-features = false, features = ["rustls-tls-webpki-roots", "connect"] }
+ureq = { version = "3.0.12", default-features = false, features = ["gzip", "rustls"] }
 clap = { version = "4.5.40", default-features = false, features = ["std", "derive", "usage", "help"] }
-log = { version = "0.4.27", default-features = false, features = ["std"] }
-simple_logger = { version = "5.0.0", default-features = false, features = ["time", "colored", "colors"] }
-#rustls = { version = "0.23.28", default-features = false, features = ["ring"] }
-#rustls-pki-types = "1.12.0"
-futures = { version = "0.3.31", default-features = false, features = ["std"]}
+
+sysinfo = { version = "0.35.2", default-features = false, features = ["disk", "system", "multithread", "network"] }
+#chrono = { version = "0.4.41", default-features = false, features = ["clock"] }
+time = { version = "0.3.41", default-features = false, features = ["local-offset", "formatting"] }
+netstat2 = "0.11.1"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 heim-virt = "0.1.0-alpha.1"
-
 [workspace.metadata.cross.target.aarch64-linux-android]
 image = "genshinmc/rust-cross-new-ndk-aarch64-linux-android:0.0.1"
 
 [profile]
 dev = { opt-level = 3 }
 release = { opt-level = 3, lto = true, codegen-units = 1, panic = "abort" }
-minimal = { inherits = "release", opt-level = "z", lto = true, codegen-units = 1, panic = "abort", debug = false }
+minimal = { inherits = "release", opt-level = "z", lto = true, codegen-units = 1, panic = "abort", debug = false, strip = true }

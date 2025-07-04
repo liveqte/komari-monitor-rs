@@ -3,10 +3,8 @@ use crate::get_info::{
     realtime_cpu, realtime_disk, realtime_load, realtime_mem, realtime_network, realtime_process,
     realtime_swap, realtime_uptime,
 };
-use log::debug;
-use reqwest::Client;
-use serde::{Deserialize, Serialize};
-use std::net::{Ipv4Addr, Ipv6Addr};
+use miniserde::{Deserialize, Serialize};
+use sysinfo::{Disks, Networks};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BasicInfo {
@@ -19,8 +17,8 @@ pub struct BasicInfo {
     pub swap_total: u64,
     pub mem_total: u64,
 
-    pub ipv4: Option<Ipv4Addr>,
-    pub ipv6: Option<Ipv6Addr>,
+    pub ipv4: Option<String>,
+    pub ipv6: Option<String>,
 
     pub os: String,
     pub version: String,
@@ -28,10 +26,10 @@ pub struct BasicInfo {
 }
 
 impl BasicInfo {
-    pub async fn build(sysinfo_sys: &sysinfo::System, reqwest_client: &Client) -> Self {
+    pub async fn build(sysinfo_sys: &sysinfo::System) -> Self {
         let cpu = cpu_info_without_usage(&sysinfo_sys);
         let mem_disk = mem_info_without_usage(&sysinfo_sys);
-        let ip = ip(reqwest_client).await;
+        let ip = ip().await;
         let os = os().await;
         Self {
             arch: arch(),
@@ -42,8 +40,8 @@ impl BasicInfo {
             disk_total: mem_disk.disk_total,
             swap_total: mem_disk.swap_total,
             mem_total: mem_disk.mem_total,
-            ipv4: ip.ipv4,
-            ipv6: ip.ipv6,
+            ipv4: ip.ipv4.map(|ip| ip.to_string()),
+            ipv6: ip.ipv6.map(|ip| ip.to_string()),
             os: format!("{} {}", os.os, os.version),
             version: format!("komari-monitor-rs {}", env!("CARGO_PKG_VERSION")),
             virtualization: os.virtualization,
@@ -52,23 +50,31 @@ impl BasicInfo {
 
     pub async fn push(
         sysinfo_sys: &sysinfo::System,
-        reqwest_client: &Client,
         basic_info_url: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let basic_info = BasicInfo::build(&sysinfo_sys, &reqwest_client).await;
-        debug!("Basic Info: {:?}", basic_info);
-        let status = reqwest_client
-            .post(basic_info_url)
-            .json(&basic_info)
-            .send()
-            .await?
-            .status()
-            .is_success();
+        let basic_info = Self::build(&sysinfo_sys).await;
+        // debug!("Basic Info: {:?}", basic_info);
 
-        if status {
+        let resp = if let Ok(resp) = ureq::post(basic_info_url)
+            .header("User-Agent", "curl/11.45.14-rs")
+            .send(&miniserde::json::to_string(&basic_info))
+        {
+            println!("{:?}", resp.body().charset());
+            resp
+        } else {
+            return Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "推送 Basic Info Post 时发生错误",
+            )));
+        };
+
+        if resp.status().is_success() {
             Ok(())
         } else {
-            Err("上传 Basic Info 失败".into())
+            Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "推送 Basic Info 时发生错误",
+            )))
         }
     }
 }
@@ -80,19 +86,16 @@ pub struct CPU {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RAM {
-    pub total: u64,
     pub used: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Swap {
-    pub total: u64,
     pub used: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Disk {
-    pub total: u64,
     pub used: u64,
 }
 
@@ -135,17 +138,17 @@ pub struct RealTimeInfo {
 }
 
 impl RealTimeInfo {
-    pub async fn build(sysinfo_sys: &sysinfo::System, systemstat_sys: &systemstat::System) -> Self {
+    pub async fn build(sysinfo_sys: &sysinfo::System, network: &Networks, disk: &Disks) -> Self {
         Self {
             cpu: realtime_cpu(sysinfo_sys),
             ram: realtime_mem(sysinfo_sys),
             swap: realtime_swap(sysinfo_sys),
-            disk: realtime_disk(),
-            load: realtime_load(systemstat_sys),
-            network: realtime_network(systemstat_sys),
-            connections: realtime_connections(systemstat_sys),
-            uptime: realtime_uptime(systemstat_sys),
-            process: realtime_process(sysinfo_sys),
+            disk: realtime_disk(disk),
+            load: realtime_load(),
+            network: realtime_network(network),
+            connections: realtime_connections(),
+            uptime: realtime_uptime(),
+            process: realtime_process(),
             message: "".to_string(),
         }
     }
