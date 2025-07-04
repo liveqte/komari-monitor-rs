@@ -1,6 +1,5 @@
 use crate::data_struct::{CPU, Connections, Disk, Load, Network, RAM, Swap};
 use miniserde::{Deserialize, Serialize, json};
-use netstat2::{AddressFamilyFlags, ProtocolFlags, ProtocolSocketInfo, iterate_sockets_info_without_pids};
 use std::collections::HashSet;
 use std::fs;
 use std::net::{Ipv4Addr, Ipv6Addr};
@@ -213,7 +212,9 @@ pub fn realtime_network(network: &Networks) -> Network {
     }
 }
 
+#[cfg(target_os = "linux")]
 pub fn realtime_connections() -> Connections {
+    use netstat2::{AddressFamilyFlags, ProtocolFlags, ProtocolSocketInfo, iterate_sockets_info_without_pids};
     let af_flags = AddressFamilyFlags::IPV4 | AddressFamilyFlags::IPV6;
     let proto_flags = ProtocolFlags::TCP | ProtocolFlags::UDP;
 
@@ -236,6 +237,14 @@ pub fn realtime_connections() -> Connections {
     Connections {
         tcp: tcp_count,
         udp: udp_count,
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+pub fn realtime_connections() -> Connections {
+    Connections {
+        tcp: 0,
+        udp: 0,
     }
 }
 
