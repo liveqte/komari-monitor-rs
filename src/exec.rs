@@ -1,7 +1,7 @@
 use miniserde::{Deserialize, Serialize, json};
 use std::process::Stdio;
-use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
+use time::format_description::well_known::Rfc3339;
 use tokio::process::Command;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -44,7 +44,7 @@ pub async fn exec_command(remote_exec: RemoteExec, callback_url: &str) -> Result
 
         let status = output.status.code().unwrap_or(1);
 
-        Ok((status, format!("{}\n{}", stdout_str, stderr_str)))
+        Ok((status, format!("{stdout_str}\n{stderr_str}")))
     });
 
     let (status, output) = if let Ok(result) = exec.await {

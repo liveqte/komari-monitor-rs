@@ -72,10 +72,8 @@ impl ServerCertVerifier for NoVerification {
 pub fn create_dangerous_config() -> ClientConfig {
     let verifier = Arc::new(NoVerification {});
 
-    let config = ClientConfig::builder()
+    ClientConfig::builder()
         .dangerous()
         .with_custom_certificate_verifier(verifier)
-        .with_no_client_auth();
-
-    config
+        .with_no_client_auth()
 }

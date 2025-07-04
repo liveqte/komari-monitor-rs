@@ -27,8 +27,8 @@ pub struct BasicInfo {
 
 impl BasicInfo {
     pub async fn build(sysinfo_sys: &sysinfo::System) -> Self {
-        let cpu = cpu_info_without_usage(&sysinfo_sys);
-        let mem_disk = mem_info_without_usage(&sysinfo_sys);
+        let cpu = cpu_info_without_usage(sysinfo_sys);
+        let mem_disk = mem_info_without_usage(sysinfo_sys);
         let ip = ip().await;
         let os = os().await;
         Self {
@@ -36,7 +36,7 @@ impl BasicInfo {
             cpu_cores: cpu.cores,
             cpu_name: cpu.name,
 
-            gpu_name: "".to_string(),
+            gpu_name: String::new(),
             disk_total: mem_disk.disk_total,
             swap_total: mem_disk.swap_total,
             mem_total: mem_disk.mem_total,
@@ -52,8 +52,7 @@ impl BasicInfo {
         sysinfo_sys: &sysinfo::System,
         basic_info_url: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let basic_info = Self::build(&sysinfo_sys).await;
-        // debug!("Basic Info: {:?}", basic_info);
+        let basic_info = Self::build(sysinfo_sys).await;
 
         let resp = if let Ok(resp) = ureq::post(basic_info_url)
             .header("User-Agent", "curl/11.45.14-rs")
@@ -62,8 +61,7 @@ impl BasicInfo {
             println!("{:?}", resp.body().charset());
             resp
         } else {
-            return Err(Box::new(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            return Err(Box::new(std::io::Error::other(
                 "推送 Basic Info Post 时发生错误",
             )));
         };
@@ -71,8 +69,7 @@ impl BasicInfo {
         if resp.status().is_success() {
             Ok(())
         } else {
-            Err(Box::new(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            Err(Box::new(std::io::Error::other(
                 "推送 Basic Info 时发生错误",
             )))
         }
@@ -149,7 +146,7 @@ impl RealTimeInfo {
             connections: realtime_connections(),
             uptime: realtime_uptime(),
             process: realtime_process(),
-            message: "".to_string(),
+            message: String::new(),
         }
     }
 }

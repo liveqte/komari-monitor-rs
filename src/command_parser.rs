@@ -53,25 +53,21 @@ pub async fn connect_ws(
             } else {
                 Err("无法创立 WebSocket 连接".into())
             }
-        } else {
-            if let Ok(ws) = connect_async_tls_with_config(
-                url,
-                None,
-                false,
-                Some(Connector::Rustls(Arc::new(create_dangerous_config()))),
-            )
-            .await
-            {
-                Ok(ws.0)
-            } else {
-                Err("无法创立 WebSocket 连接".to_string())
-            }
-        }
-    } else {
-        if let Ok(ws) = connect_async(url).await {
+        } else if let Ok(ws) = connect_async_tls_with_config(
+            url,
+            None,
+            false,
+            Some(Connector::Rustls(Arc::new(create_dangerous_config()))),
+        )
+        .await
+        {
             Ok(ws.0)
         } else {
             Err("无法创立 WebSocket 连接".to_string())
         }
+    } else if let Ok(ws) = connect_async(url).await {
+        Ok(ws.0)
+    } else {
+        Err("无法创立 WebSocket 连接".to_string())
     }
 }

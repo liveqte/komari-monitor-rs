@@ -1,10 +1,10 @@
 use crate::data_struct::{CPU, Connections, Disk, Load, Network, RAM, Swap};
-use netstat2::*;
+use miniserde::{Deserialize, Serialize, json};
+use netstat2::{AddressFamilyFlags, ProtocolFlags, ProtocolSocketInfo, iterate_sockets_info_without_pids};
 use std::collections::HashSet;
 use std::fs;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
-use miniserde::{json, Deserialize, Serialize};
 use sysinfo::{Disks, Networks, System};
 use tokio::task::JoinHandle;
 
@@ -119,8 +119,8 @@ pub struct OsInfo {
 pub async fn os() -> OsInfo {
     let os = format!(
         "{} {}",
-        System::name().unwrap_or(String::new()),
-        System::os_version().unwrap_or(String::new())
+        System::name().unwrap_or_default(),
+        System::os_version().unwrap_or_default()
     );
     let kernel_version = System::kernel_version().unwrap_or("Unknown".to_string());
 
@@ -147,7 +147,7 @@ pub fn realtime_cpu(sysinfo_sys: &System) -> CPU {
     for cpu in cpus {
         avg += cpu.cpu_usage();
     }
-    let avg = avg as f64 / cpus.len() as f64;
+    let avg = f64::from(avg) / cpus.len() as f64;
 
     CPU { usage: avg }
 }
@@ -198,7 +198,7 @@ pub fn realtime_network(network: &Networks) -> Network {
     let mut up = 0;
     let mut down = 0;
 
-    for (_, data) in network.iter() {
+    for (_, data) in network {
         total_up += data.total_transmitted();
         total_down += data.total_received();
         up += data.transmitted();
