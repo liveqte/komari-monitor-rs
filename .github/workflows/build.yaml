@@ -154,9 +154,6 @@ jobs:
           - release_for: linux_armv7_musleabihf
             target: armv7-unknown-linux-musleabihf
             binary_name: komari-monitor-rs-linux-armv7-musleabihf
-          - release_for: linux_s390x_gnu
-            target: s390x-unknown-linux-gnu
-            binary_name: komari-monitor-rs-linux-s390x-gnu
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
