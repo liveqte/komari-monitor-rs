@@ -26,8 +26,8 @@ pub struct Args {
     #[arg(long, default_value_t = 1)]
     pub realtime_info_interval: u64,
 
-    /// 启用 TLS (默认打开)
-    #[arg(long, default_value_t = true)]
+    /// 启用 TLS (默认关闭)
+    #[arg(long, default_value_t = false)]
     pub tls: bool,
 
     /// 忽略证书验证
