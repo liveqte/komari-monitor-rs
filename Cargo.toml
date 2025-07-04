@@ -19,7 +19,6 @@ ureq = { version = "3.0.12", default-features = false, features = ["gzip", "rust
 clap = { version = "4.5.40", default-features = false, features = ["std", "derive", "usage", "help"] }
 
 sysinfo = { version = "0.35.2", default-features = false, features = ["disk", "system", "multithread", "network"] }
-#chrono = { version = "0.4.41", default-features = false, features = ["clock"] }
 time = { version = "0.3.41", default-features = false, features = ["local-offset", "formatting"] }
 netstat2 = "0.11.1"
 
