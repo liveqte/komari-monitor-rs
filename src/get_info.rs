@@ -4,6 +4,7 @@ use std::collections::HashSet;
 use std::fs;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
+use netstat2::iterate_sockets_info_without_pids;
 use sysinfo::{Disks, Networks, System};
 use tokio::task::JoinHandle;
 
@@ -238,7 +239,8 @@ pub fn realtime_connections() -> Connections {
         udp: udp_count,
     }
 }
-#[cfg(not(target_os = "linux"))]
+
+#[cfg(target_os = "windows")]
 pub fn realtime_connections() -> Connections {
     use netstat2::{ProtocolFlags, ProtocolSocketInfo, iterate_sockets_info_without_pids};
     let proto_flags = ProtocolFlags::TCP | ProtocolFlags::UDP;
@@ -262,8 +264,11 @@ pub fn realtime_connections() -> Connections {
     Connections {
         tcp: tcp_count,
         udp: udp_count,
-    };
+    }
+}
 
+#[cfg(target_os = "macos")]
+pub fn realtime_connections() -> Connections {
     Connections { tcp: 0, udp: 0 }
 }
 
