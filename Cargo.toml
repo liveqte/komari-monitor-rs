@@ -8,7 +8,7 @@ repository = "https://github.com/GenshinMinecraft/ak_monitor_client_rs"
 license = "WTFPL"
 
 [dependencies]
-tokio = { version = "1.46.0", default-features = false, features = ["rt-multi-thread", "macros", "time", "process", "sync"] }
+tokio = { version = "1.46.1", default-features = false, features = ["rt-multi-thread", "macros", "time", "process", "sync"] }
 rustls = { version = "0.23.28", default-features = false, features = ["ring"] }
 rustls-pki-types = "1.12.0"
 futures = { version = "0.3.31", default-features = false, features = ["std"] }
@@ -21,10 +21,10 @@ clap = { version = "4.5.40", default-features = false, features = ["std", "deriv
 sysinfo = { version = "0.35.2", default-features = false, features = ["disk", "system", "multithread", "network"] }
 time = { version = "0.3.41", default-features = false, features = ["local-offset", "formatting"] }
 icmp-socket = "0.2.0"
+netstat2 = "0.11.1"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 heim-virt = "0.1.0-alpha.1"
-netstat2 = "0.11.1"
 
 [workspace.metadata.cross.target.aarch64-linux-android]
 image = "genshinmc/rust-cross-new-ndk-aarch64-linux-android:0.0.1"
@@ -32,4 +32,4 @@ image = "genshinmc/rust-cross-new-ndk-aarch64-linux-android:0.0.1"
 [profile]
 dev = { opt-level = 3 }
 release = { opt-level = 3, lto = true, codegen-units = 1, panic = "abort" }
-minimal = { inherits = "release", opt-level = "z", lto = true, codegen-units = 1, panic = "abort", debug = false, strip = true }
+minimal = { inherits = "release", opt-level = "z", lto = true, codegen-units = 1, panic = "abort", debug = false, strip = true, debug-assertions = false, overflow-checks = false }
