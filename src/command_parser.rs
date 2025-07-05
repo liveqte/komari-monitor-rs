@@ -26,8 +26,8 @@ pub struct Args {
     #[arg(short, long, default_value_t = 1.0)]
     pub fake: f64,
 
-    /// 设置 Real-Time Info 上传间隔时间 (sec)
-    #[arg(long, default_value_t = 1)]
+    /// 设置 Real-Time Info 上传间隔时间 (ms)
+    #[arg(long, default_value_t = 1000)]
     pub realtime_info_interval: u64,
 
     /// 启用 TLS (默认关闭)

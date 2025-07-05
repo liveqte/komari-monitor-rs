@@ -101,7 +101,8 @@ async fn main() {
                                     let mut write = locked_write.lock().await;
                                     println!("Ping Success: {}", json::to_string(&json));
                                     write
-                                        .send(tokio_tungstenite::tungstenite::Message::Text(
+                                        .send(
+                                            Message::Text(
                                             Utf8Bytes::from(json::to_string(&json)),
                                         ))
                                         .await
@@ -135,6 +136,7 @@ async fn main() {
         }
 
         loop {
+            let start_time = tokio::time::Instant::now();
             sysinfo_sys.refresh_specifics(
                 RefreshKind::nothing()
                     .with_cpu(CpuRefreshKind::everything().without_frequency())
@@ -150,8 +152,17 @@ async fn main() {
                 eprintln!("推送 RealTime 时发生错误，尝试重新连接: {e}");
                 break;
             }
+            let end_time = start_time.elapsed();
+            println!("在 {}ms 内发送完毕 RealTime 数据", end_time.as_millis());
 
-            sleep(Duration::from_secs(args.realtime_info_interval)).await;
+            sleep(Duration::from_millis({
+                let end = u64::try_from(end_time.as_millis()).unwrap_or(0);
+                if end > args.realtime_info_interval {
+                    continue;
+                } else {
+                    args.realtime_info_interval - end
+                }
+            })).await;
         }
     }
 }

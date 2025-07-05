@@ -68,7 +68,7 @@ Options:
       --ws-server <WS_SERVER>                            设置主端 WebSocket 地址
   -t, --token <TOKEN>                                    设置 Token
   -f, --fake <FAKE>                                      设置虚假倍率 [default: 1]
-      --realtime-info-interval <REALTIME_INFO_INTERVAL>  设置 Real-Time Info 上传间隔时间 (sec) [default: 1]
+      --realtime-info-interval <REALTIME_INFO_INTERVAL>  设置 Real-Time Info 上传间隔时间 (ms) [default: 1000]
       --tls                                              启用 TLS (默认关闭)
       --ignore-unsafe-cert                               忽略证书验证
   -h, --help                                             Print help
