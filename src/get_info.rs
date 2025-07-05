@@ -1,4 +1,4 @@
-use crate::data_struct::{CPU, Connections, Disk, Load, Network, RAM, Swap};
+use crate::data_struct::{Connections, Cpu, Disk, Load, Network, Ram, Swap};
 use miniserde::{Deserialize, Serialize, json};
 use std::collections::HashSet;
 use std::fs;
@@ -17,16 +17,20 @@ pub struct CPUInfoWithOutUsage {
     pub cores: u16,
 }
 pub fn cpu_info_without_usage(sysinfo_sys: &System) -> CPUInfoWithOutUsage {
-    let cores = sysinfo_sys.cpus().len() as u16;
+    let cores = u16::try_from(sysinfo_sys.cpus().len());
     let mut hashset = HashSet::new();
     for cpu in sysinfo_sys.cpus() {
         hashset.insert(cpu.brand().to_string());
     }
     let name = hashset.into_iter().collect::<Vec<String>>().join(", ");
 
-    CPUInfoWithOutUsage { name, cores }
+    CPUInfoWithOutUsage {
+        name,
+        cores: cores.unwrap_or(0),
+    }
 }
 
+#[derive(Debug)]
 pub struct MemDiskInfoWithOutUsage {
     pub mem_total: u64,
     pub swap_total: u64,
@@ -62,12 +66,10 @@ struct IpIo {
 
 pub async fn ip() -> IPInfo {
     let ipv4: JoinHandle<Option<Ipv4Addr>> = tokio::spawn(async move {
-        let resp = if let Ok(resp) = ureq::get("https://4.ipinfo.io/")
+        let Ok(resp) = ureq::get("https://4.ipinfo.io/")
             .header("User-Agent", "curl/11.45.14")
             .call()
-        {
-            resp
-        } else {
+        else {
             return None;
         };
 
@@ -83,12 +85,10 @@ pub async fn ip() -> IPInfo {
     });
 
     let ipv6: JoinHandle<Option<Ipv6Addr>> = tokio::spawn(async move {
-        let resp = if let Ok(resp) = ureq::get("https://6.ipinfo.io/")
+        let Ok(resp) = ureq::get("https://6.ipinfo.io/")
             .header("User-Agent", "curl/11.45.14")
             .call()
-        {
-            resp
-        } else {
+        else {
             return None;
         };
 
@@ -140,7 +140,7 @@ pub async fn os() -> OsInfo {
     }
 }
 
-pub fn realtime_cpu(sysinfo_sys: &System) -> CPU {
+pub fn realtime_cpu(sysinfo_sys: &System) -> Cpu {
     let cpus = sysinfo_sys.cpus();
     let mut avg = 0.0;
     for cpu in cpus {
@@ -148,11 +148,11 @@ pub fn realtime_cpu(sysinfo_sys: &System) -> CPU {
     }
     let avg = f64::from(avg) / cpus.len() as f64;
 
-    CPU { usage: avg }
+    Cpu { usage: avg }
 }
 
-pub fn realtime_mem(sysinfo_sys: &System) -> RAM {
-    RAM {
+pub fn realtime_mem(sysinfo_sys: &System) -> Ram {
+    Ram {
         used: sysinfo_sys.total_memory() - sysinfo_sys.available_memory(),
     }
 }
@@ -212,13 +212,39 @@ pub fn realtime_network(network: &Networks) -> Network {
     }
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(not(target_os = "windows"))]
 pub fn realtime_connections() -> Connections {
-    use netstat2::{AddressFamilyFlags, ProtocolFlags, ProtocolSocketInfo, iterate_sockets_info_without_pids};
+    use netstat2::{
+        AddressFamilyFlags, ProtocolFlags, ProtocolSocketInfo, iterate_sockets_info_without_pids,
+    };
     let af_flags = AddressFamilyFlags::IPV4 | AddressFamilyFlags::IPV6;
     let proto_flags = ProtocolFlags::TCP | ProtocolFlags::UDP;
 
-    let sockets_iterator = match iterate_sockets_info_without_pids(af_flags, proto_flags) {
+    let Ok(sockets_iterator) = iterate_sockets_info_without_pids(af_flags, proto_flags) else {
+        return Connections { tcp: 0, udp: 0 };
+    };
+
+    let (mut tcp_count, mut udp_count) = (0, 0);
+
+    for info_result in sockets_iterator.flatten() {
+        match info_result.protocol_socket_info {
+            ProtocolSocketInfo::Tcp(_) => tcp_count += 1,
+            ProtocolSocketInfo::Udp(_) => udp_count += 1,
+        }
+    }
+
+    Connections {
+        tcp: tcp_count,
+        udp: udp_count,
+    }
+}
+
+#[cfg(target_os = "windows")]
+pub fn realtime_connections() -> Connections {
+    use netstat2::{ProtocolFlags, ProtocolSocketInfo, iterate_sockets_info_without_pids};
+    let proto_flags = ProtocolFlags::TCP | ProtocolFlags::UDP;
+
+    let sockets_iterator = match iterate_sockets_info_without_pids(proto_flags) {
         Ok(iterator) => iterator,
         Err(_) => return Connections { tcp: 0, udp: 0 },
     };
@@ -237,15 +263,9 @@ pub fn realtime_connections() -> Connections {
     Connections {
         tcp: tcp_count,
         udp: udp_count,
-    }
-}
+    };
 
-#[cfg(not(target_os = "linux"))]
-pub fn realtime_connections() -> Connections {
-    Connections {
-        tcp: 0,
-        udp: 0,
-    }
+    Connections { tcp: 0, udp: 0 }
 }
 
 pub fn realtime_uptime() -> u64 {
@@ -255,16 +275,12 @@ pub fn realtime_uptime() -> u64 {
 pub fn realtime_process() -> u64 {
     let mut process_count = 0;
 
-    let entries = if let Ok(ent) = fs::read_dir("/proc") {
-        ent
-    } else {
+    let Ok(entries) = fs::read_dir("/proc") else {
         return 0;
     };
 
     for entry in entries {
-        let entry = if let Ok(ent) = entry {
-            ent
-        } else {
+        let Ok(entry) = entry else {
             continue;
         };
 

@@ -1,20 +1,17 @@
-// #![warn(clippy::all, clippy::pedantic)]
+#![warn(clippy::all, clippy::pedantic)]
 
-use crate::command_parser::{connect_ws, Args};
+use crate::command_parser::{Args, connect_ws};
 use crate::data_struct::{BasicInfo, RealTimeInfo};
 use crate::exec::exec_command;
 use crate::ping::ping_target;
-use futures::stream::{SplitSink, SplitStream};
 use futures::{SinkExt, StreamExt};
-use miniserde::{json, Deserialize, Serialize};
+use miniserde::{Deserialize, Serialize, json};
 use std::sync::Arc;
 use std::time::Duration;
 use sysinfo::{CpuRefreshKind, DiskRefreshKind, Disks, MemoryRefreshKind, Networks, RefreshKind};
-use tokio::net::TcpStream;
 use tokio::sync::Mutex;
 use tokio::time::sleep;
 use tokio_tungstenite::tungstenite::{Message, Utf8Bytes};
-use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
 mod command_parser;
 mod data_struct;
@@ -39,19 +36,14 @@ async fn main() {
     println!("成功读取参数: {args:?}");
 
     loop {
-        let ws_stream =
-            if let Ok(ws) = connect_ws(&real_time_url, args.tls, args.ignore_unsafe_cert).await {
-                ws
-            } else {
-                eprintln!("无法连接到 Websocket 服务器，5 秒后重新尝试");
-                sleep(Duration::from_secs(5)).await;
-                continue;
-            };
+        let Ok(ws_stream) = connect_ws(&real_time_url, args.tls, args.ignore_unsafe_cert).await
+        else {
+            eprintln!("无法连接到 Websocket 服务器，5 秒后重新尝试");
+            sleep(Duration::from_secs(5)).await;
+            continue;
+        };
 
-        let (write, mut read): (
-            SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
-            SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
-        ) = ws_stream.split();
+        let (write, mut read) = ws_stream.split();
 
         let locked_write = Arc::new(Mutex::new(write));
 
@@ -60,26 +52,22 @@ async fn main() {
             let locked_write = locked_write.clone();
             async move {
                 while let Some(msg) = read.next().await {
-                    let msg = if let Ok(msg) = msg {
-                        msg
-                    } else {
+                    let Ok(msg) = msg else {
                         continue;
                     };
 
-                    let utf8 = if let Ok(utf8) = msg.into_text() {
-                        utf8
-                    } else {
+                    let Ok(utf8) = msg.into_text() else {
                         continue;
                     };
 
                     println!("主端传入信息: {}", utf8.as_str());
 
                     #[derive(Serialize, Deserialize)]
-                    struct Message {
+                    struct Msg {
                         message: String,
                     }
 
-                    let json: Message = if let Ok(value) = json::from_str(utf8.as_str()) {
+                    let json: Msg = if let Ok(value) = json::from_str(utf8.as_str()) {
                         value
                     } else {
                         continue;
@@ -104,9 +92,7 @@ async fn main() {
                             }
                         }
                         "ping" => {
-                            let parsed = if let Ok(parsed) = json::from_str(utf8.as_str()) {
-                                parsed
-                            } else {
+                            let Ok(parsed) = json::from_str(utf8.as_str()) else {
                                 continue;
                             };
 
@@ -126,7 +112,7 @@ async fn main() {
                                 }
                             }
                         }
-                        _ => continue,
+                        _ => {}
                     }
                 }
             }
@@ -142,8 +128,10 @@ async fn main() {
         );
         sysinfo_sys.refresh_memory_specifics(MemoryRefreshKind::everything());
 
-        if let Err(e) = BasicInfo::push(&sysinfo_sys, &basic_info_url).await {
+        if let Err(e) = BasicInfo::push(&sysinfo_sys, &basic_info_url, args.fake).await {
             eprintln!("推送 Basic Info 时发生错误: {e}");
+        } else {
+            println!("推送 Basic Info 成功");
         }
 
         loop {
@@ -154,7 +142,7 @@ async fn main() {
             );
             networks.refresh(true);
             disks.refresh_specifics(true, DiskRefreshKind::nothing().with_storage());
-            let real_time = RealTimeInfo::build(&sysinfo_sys, &networks, &disks).await;
+            let real_time = RealTimeInfo::build(&sysinfo_sys, &networks, &disks, args.fake);
 
             let json = json::to_string(&real_time);
             let mut write = locked_write.lock().await;

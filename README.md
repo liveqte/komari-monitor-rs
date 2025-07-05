@@ -21,7 +21,7 @@
 
 原版体积约 6.2M，本项目体积约 992K，相差约 7.1 倍
 
-### 运行内存与 CPU 占用
+### 运行内存与 Cpu 占用
 
 ![2T5tyGnG3WNR5WiDsc1qpBj2JuKM9rLu.webp](https://www.nodeimage.com/i/9617/2T5tyGnG3WNR5WiDsc1qpBj2JuKM9rLu.png)
 
@@ -31,7 +31,7 @@
 
 原版占用内存约 15.4 MiB，本项目占用内存约 5.53 MB，相差约 2.7 倍
 
-原版峰值 CPU 占用约 49.6%，本项目峰值 CPU 占用约 4.8%
+原版峰值 Cpu 占用约 49.6%，本项目峰值 Cpu 占用约 4.8%
 
 并且，本项目在堆上的内存仅 388 kB:
 
@@ -44,7 +44,6 @@
 - PTY WebShell 实现
 
 除此之外，还有希望添加的功能:
-- 虚假倍率 (Fake Agent)
 - 自动更新
 - 自动安装
 - Bash / PWSH 一键脚本
@@ -60,28 +59,36 @@
 ## Usage
 
 ```
+Komari Monitor Agent in Rust
+
 Usage: komari-monitor-rs [OPTIONS] --http-server <HTTP_SERVER> --ws-server <WS_SERVER> --token <TOKEN>
 
 Options:
       --http-server <HTTP_SERVER>                        设置主端 Http 地址
       --ws-server <WS_SERVER>                            设置主端 WebSocket 地址
   -t, --token <TOKEN>                                    设置 Token
+  -f, --fake <FAKE>                                      设置虚假倍率 [default: 1]
       --realtime-info-interval <REALTIME_INFO_INTERVAL>  设置 Real-Time Info 上传间隔时间 (sec) [default: 1]
       --tls                                              启用 TLS (默认关闭)
       --ignore-unsafe-cert                               忽略证书验证
   -h, --help                                             Print help
   -V, --version                                          Print version
-
 ```
 
 必须设置 `--http-server` / `--ws-server` / `--token`
 
 在原版上，http 与 ws server 写在同一个参数上，本项目将其分离，便于在奇奇怪怪的环境下部署 (比如 ServerLess)
 
+`--fake` 参数可以让你的小鸡拥有无穷的算力，装逼必备
+
 Demo:
 
 ```
 ./komari-monitor-rs --http-server http://localhost:25774 --ws-server ws://localhost:25774 --token 1GOJpgn0eXk0orz7
+```
+
+```
+./komari-monitor-rs --http-server http://localhost:25774 --ws-server ws://localhost:25774 --token 1GOJpgn0eXk0orz7 --fake 100
 ```
 
 ```

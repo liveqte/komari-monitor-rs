@@ -6,8 +6,8 @@ use miniserde::{Deserialize, Serialize};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
 use std::time::Duration;
-use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
+use time::format_description::well_known::Rfc3339;
 use tokio::net::TcpStream;
 use tokio::time::Instant;
 
@@ -62,19 +62,17 @@ pub async fn ping_target(ping_event: PingEvent) -> Result<PingEventCallback, Str
             let rtt = start_time.elapsed();
 
             if let Ok(()) = ping {
-                let now =
-                    OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
+                let now = OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
                 let finished_at = now.format(&Rfc3339).unwrap_or_default();
                 Ok(PingEventCallback {
                     type_str: String::from("ping_result"),
                     task_id: ping_event.ping_task_id,
                     ping_type: String::from("tcp"),
-                    value: Option::from(rtt.as_millis() as i64),
+                    value: i64::try_from(rtt.as_millis()).ok(),
                     finished_at,
                 })
             } else {
-                let now =
-                    OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
+                let now = OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
                 let finished_at = now.format(&Rfc3339).unwrap_or_default();
 
                 Ok(PingEventCallback {
@@ -88,23 +86,23 @@ pub async fn ping_target(ping_event: PingEvent) -> Result<PingEventCallback, Str
         }
         "http" => {
             let start_time = Instant::now();
-            if let Ok(_) = ureq::get(&ping_event.ping_target)
+            if ureq::get(&ping_event.ping_target)
                 .header("User-Agent", "curl/11.45.14")
-                .call() {
-                let now =
-                    OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
+                .call()
+                .is_ok()
+            {
+                let now = OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
                 let finished_at = now.format(&Rfc3339).unwrap_or_default();
 
                 Ok(PingEventCallback {
                     type_str: String::from("ping_result"),
                     task_id: ping_event.ping_task_id,
                     ping_type: String::from("http"),
-                    value: Option::from(start_time.elapsed().as_millis() as i64),
+                    value: i64::try_from(start_time.elapsed().as_millis()).ok(),
                     finished_at,
                 })
             } else {
-                let now =
-                    OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
+                let now = OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
                 let finished_at = now.format(&Rfc3339).unwrap_or_default();
 
                 Ok(PingEventCallback {
@@ -121,9 +119,7 @@ pub async fn ping_target(ping_event: PingEvent) -> Result<PingEventCallback, Str
 }
 
 pub async fn icmp_ipv4(ip: Ipv4Addr, task_id: u64) -> Result<PingEventCallback, String> {
-    let mut socket4 = if let Ok(socket) = IcmpSocket4::new() {
-        socket
-    } else {
+    let Ok(mut socket4) = IcmpSocket4::new() else {
         return Err(String::from("无法创建 Raw 套接字"));
     };
 
@@ -159,17 +155,14 @@ pub async fn icmp_ipv4(ip: Ipv4Addr, task_id: u64) -> Result<PingEventCallback, 
 
     socket4.set_timeout(Some(Duration::from_secs(3)));
 
-    let (resp, _) = match socket4.rcv_from() {
-        Ok(tpl) => tpl,
-        Err(_) => {
-            return Ok(PingEventCallback {
-                type_str: String::from("ping_result"),
-                task_id,
-                ping_type: String::from("icmp"),
-                value: None,
-                finished_at: String::new(),
-            });
-        }
+    let Ok((resp, _)) = socket4.rcv_from() else {
+        return Ok(PingEventCallback {
+            type_str: String::from("ping_result"),
+            task_id,
+            ping_type: String::from("icmp"),
+            value: None,
+            finished_at: String::new(),
+        });
     };
 
     let rtt = send_time.elapsed();
@@ -187,7 +180,7 @@ pub async fn icmp_ipv4(ip: Ipv4Addr, task_id: u64) -> Result<PingEventCallback, 
             type_str: String::from("ping_result"),
             task_id,
             ping_type: String::from("icmp"),
-            value: Some(rtt.as_millis() as i64),
+            value: i64::try_from(rtt.as_millis()).ok(),
             finished_at,
         })
     } else {
@@ -202,9 +195,7 @@ pub async fn icmp_ipv4(ip: Ipv4Addr, task_id: u64) -> Result<PingEventCallback, 
 }
 
 pub async fn icmp_ipv6(ip: Ipv6Addr, task_id: u64) -> Result<PingEventCallback, String> {
-    let mut socket6 = if let Ok(socket) = IcmpSocket6::new() {
-        socket
-    } else {
+    let Ok(mut socket6) = IcmpSocket6::new() else {
         return Err(String::from("无法创建 Raw 套接字"));
     };
 
@@ -238,17 +229,14 @@ pub async fn icmp_ipv6(ip: Ipv6Addr, task_id: u64) -> Result<PingEventCallback, 
 
     socket6.set_timeout(Some(Duration::from_secs(3)));
 
-    let (resp, _) = match socket6.rcv_from() {
-        Ok(tpl) => tpl,
-        Err(_) => {
-            return Ok(PingEventCallback {
-                type_str: String::from("ping_result"),
-                task_id,
-                ping_type: String::from("icmp"),
-                value: None,
-                finished_at: String::new(),
-            });
-        }
+    let Ok((resp, _)) = socket6.rcv_from() else {
+        return Ok(PingEventCallback {
+            type_str: String::from("ping_result"),
+            task_id,
+            ping_type: String::from("icmp"),
+            value: None,
+            finished_at: String::new(),
+        });
     };
 
     let rtt = send_time.elapsed();
@@ -266,7 +254,7 @@ pub async fn icmp_ipv6(ip: Ipv6Addr, task_id: u64) -> Result<PingEventCallback, 
             type_str: String::from("ping_result"),
             task_id,
             ping_type: String::from("icmp"),
-            value: Some(rtt.as_millis() as i64),
+            value: i64::try_from(rtt.as_millis()).ok(),
             finished_at,
         })
     } else {

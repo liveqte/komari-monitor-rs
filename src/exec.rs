@@ -21,21 +21,17 @@ pub struct RemoteExecCallback {
 
 pub async fn exec_command(remote_exec: RemoteExec, callback_url: &str) -> Result<(), String> {
     let exec = tokio::spawn(async move {
-        let child = if let Ok(child) = Command::new("bash")
+        let Ok(child) = Command::new("bash")
             .arg("-c")
             .arg(remote_exec.command)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-        {
-            child
-        } else {
+        else {
             return Err("failed to execute process".to_string());
         };
 
-        let output = if let Ok(output) = child.wait_with_output().await {
-            output
-        } else {
+        let Ok(output) = child.wait_with_output().await else {
             return Err("failed to get process output".to_string());
         };
 
@@ -47,13 +43,7 @@ pub async fn exec_command(remote_exec: RemoteExec, callback_url: &str) -> Result
         Ok((status, format!("{stdout_str}\n{stderr_str}")))
     });
 
-    let (status, output) = if let Ok(result) = exec.await {
-        if let Ok(result) = result {
-            result
-        } else {
-            return Err("failed to execute process".to_string());
-        }
-    } else {
+    let Ok(Ok((status, output))) = exec.await else {
         return Err("failed to execute process".to_string());
     };
 
