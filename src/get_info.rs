@@ -212,7 +212,7 @@ pub fn realtime_network(network: &Networks) -> Network {
     }
 }
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(target_os = "linux")]
 pub fn realtime_connections() -> Connections {
     use netstat2::{
         AddressFamilyFlags, ProtocolFlags, ProtocolSocketInfo, iterate_sockets_info_without_pids,
@@ -238,8 +238,7 @@ pub fn realtime_connections() -> Connections {
         udp: udp_count,
     }
 }
-
-#[cfg(target_os = "windows")]
+#[cfg(not(target_os = "linux"))]
 pub fn realtime_connections() -> Connections {
     use netstat2::{ProtocolFlags, ProtocolSocketInfo, iterate_sockets_info_without_pids};
     let proto_flags = ProtocolFlags::TCP | ProtocolFlags::UDP;
