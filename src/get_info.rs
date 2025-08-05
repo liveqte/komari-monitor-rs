@@ -4,13 +4,18 @@ use std::collections::HashSet;
 use std::fs;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
-use netstat2::iterate_sockets_info_without_pids;
+// use netstat2::iterate_sockets_info_without_pids;
 use sysinfo::{Disks, Networks, System};
 use tokio::task::JoinHandle;
 
 pub fn arch() -> String {
     let arch = std::env::consts::ARCH;
     arch.to_string()
+}
+
+pub fn get_kernel_version() -> String {
+    let kernel_version = System::kernel_version().unwrap_or_default();
+    kernel_version
 }
 
 pub struct CPUInfoWithOutUsage {
@@ -67,16 +72,18 @@ struct IpIo {
 
 pub async fn ip() -> IPInfo {
     let ipv4: JoinHandle<Option<Ipv4Addr>> = tokio::spawn(async move {
-        let Ok(resp) = ureq::get("https://4.ipinfo.io/")
-            .header("User-Agent", "curl/11.45.14")
+        let Ok(mut resp) = ureq::get("https://ipinfo.io/")
+            .header("User-Agent", "curl/8.7.1")
             .call()
         else {
             return None;
         };
 
-        let charset = resp.body().charset().unwrap_or("");
+        let Ok(body) = resp.body_mut().read_to_string() else {
+            return None;
+        };
 
-        let json: IpIo = if let Ok(json) = json::from_str(charset) {
+        let json: IpIo = if let Ok(json) = json::from_str(&body) {
             json
         } else {
             return None;
@@ -86,16 +93,18 @@ pub async fn ip() -> IPInfo {
     });
 
     let ipv6: JoinHandle<Option<Ipv6Addr>> = tokio::spawn(async move {
-        let Ok(resp) = ureq::get("https://6.ipinfo.io/")
-            .header("User-Agent", "curl/11.45.14")
+        let Ok(mut resp) = ureq::get("https://v6.ipinfo.io/")
+            .header("User-Agent", "curl/8.7.1")
             .call()
         else {
             return None;
         };
 
-        let charset = resp.body().charset().unwrap_or("");
+        let Ok(body) = resp.body_mut().read_to_string() else {
+            return None;
+        };
 
-        let json: IpIo = if let Ok(json) = json::from_str(charset) {
+        let json: IpIo = if let Ok(json) = json::from_str(&body) {
             json
         } else {
             return None;

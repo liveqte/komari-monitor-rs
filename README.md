@@ -15,27 +15,15 @@
 
 ### Binary 体积
 
-![X2PLl7nT3WNR5WgEsc1qsYzHdnJQjC2V.webp](https://www.nodeimage.com/i/9617/X2PLl7nT3WNR5WgEsc1qsYzHdnJQjC2V.png)
-
-(上为原版，下为本项目)
-
 原版体积约 6.2M，本项目体积约 992K，相差约 7.1 倍
 
 ### 运行内存与 Cpu 占用
-
-![2T5tyGnG3WNR5WiDsc1qpBj2JuKM9rLu.webp](https://www.nodeimage.com/i/9617/2T5tyGnG3WNR5WiDsc1qpBj2JuKM9rLu.png)
-
-![jJBqgKnJ3WNR5WhEsc1qM6beNn1pWYo0.webp](https://www.nodeimage.com/i/9617/jJBqgKnJ3WNR5WhEsc1qM6beNn1pWYo0.png)
-
-(上为原版，下为本项目)
 
 原版占用内存约 15.4 MiB，本项目占用内存约 5.53 MB，相差约 2.7 倍
 
 原版峰值 Cpu 占用约 49.6%，本项目峰值 Cpu 占用约 4.8%
 
-并且，本项目在堆上的内存仅 388 kB:
-
-![kZdGJSn03WNR5WiFsc1qsiJYkHqlEgNr.webp](https://www.nodeimage.com/i/9617/kZdGJSn03WNR5WiFsc1qsiJYkHqlEgNr.png)
+并且，本项目在堆上的内存仅 388 kB
 
 ### 实现功能
 
