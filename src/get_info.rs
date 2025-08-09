@@ -13,11 +13,6 @@ pub fn arch() -> String {
     arch.to_string()
 }
 
-pub fn get_kernel_version() -> String {
-    let kernel_version = System::kernel_version().unwrap_or_default();
-    kernel_version
-}
-
 pub struct CPUInfoWithOutUsage {
     pub name: String,
     pub cores: u16,
