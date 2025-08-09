@@ -1,4 +1,4 @@
-use crate::get_info::{arch, cpu_info_without_usage, get_kernel_version, ip, mem_info_without_usage, os, realtime_connections, realtime_cpu, realtime_disk, realtime_load, realtime_mem, realtime_network, realtime_process, realtime_swap, realtime_uptime};
+use crate::get_info::{arch, cpu_info_without_usage, ip, mem_info_without_usage, os, realtime_connections, realtime_cpu, realtime_disk, realtime_load, realtime_mem, realtime_network, realtime_process, realtime_swap, realtime_uptime};
 use miniserde::{Deserialize, Serialize};
 use sysinfo::{Disks, Networks};
 
@@ -38,9 +38,9 @@ impl BasicInfo {
             mem_total: (mem_disk.mem_total as f64 * fake) as u64,
             ipv4: ip.ipv4.map(|ip| ip.to_string()),
             ipv6: ip.ipv6.map(|ip| ip.to_string()),
-            os: format!("{} {}", os.os, os.version),
+            os: os.os,
             version: format!("komari-monitor-rs {}", env!("CARGO_PKG_VERSION")),
-            kernel_version: get_kernel_version(),
+            kernel_version: os.version,
             virtualization: os.virtualization,
         }
     }
@@ -51,7 +51,6 @@ impl BasicInfo {
         fake: f64,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let basic_info = Self::build(sysinfo_sys, fake).await;
-
         println!("{:?}", basic_info);
 
         let Ok(resp) = ureq::post(basic_info_url)
