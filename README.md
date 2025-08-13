@@ -9,6 +9,18 @@
 
 致力于实现[原版 Agent](https://github.com/komari-monitor/komari-agent) 的所有功能，并拓展更多功能
 
+## 一键脚本
+
+- 交互模式
+  ```bash
+  wget -O setup-client-rs.sh "https://ghfast.top/https://raw.githubusercontent.com/GenshinMinecraft/komari-monitor-rs/refs/heads/main/install.sh" && chmod +x setup-client-rs.sh && sudo bash ./setup-client-rs.sh
+  ```
+- 直接传入参数
+  ```bash
+  wget -O setup-client-rs.sh "https://ghfast.top/https://raw.githubusercontent.com/GenshinMinecraft/komari-monitor-rs/refs/heads/main/install.sh" && chmod +x setup-client-rs.sh
+  bash install.sh --http-server "http://your.server:port" --ws-server "ws://your.server:port" --token "your_token"
+  ```
+
 ## 与原版的差异
 
 测试项目均在 Redmi Book Pro 15 2022 锐龙版 + Arch Linux 最新版 + Rust Toolchain Stable 下测试
