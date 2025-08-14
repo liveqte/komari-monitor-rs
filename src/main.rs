@@ -100,13 +100,15 @@ async fn main() {
                                 Ok(json) => {
                                     let mut write = locked_write.lock().await;
                                     println!("Ping Success: {}", json::to_string(&json));
-                                    write
+                                    if let Err(e) = 
+                                        write
                                         .send(
                                             Message::Text(
                                             Utf8Bytes::from(json::to_string(&json)),
                                         ))
-                                        .await
-                                        .unwrap();
+                                        .await {
+                                            eprintln!("推送 ping result 时发生错误，尝试重新连接: {e}");
+                                        } 
                                 }
                                 Err(err) => {
                                     eprintln!("Ping Error: {err}");
