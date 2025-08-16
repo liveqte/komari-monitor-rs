@@ -23,6 +23,9 @@ time = { version = "0.3.41", default-features = false, features = ["local-offset
 icmp-socket = "0.2.0"
 netstat2 = "0.11.1"
 
+[target.'cfg(target_os = "windows")'.dependencies]
+raw-cpuid = "11.5.0"
+
 [target.'cfg(target_os = "linux")'.dependencies]
 heim-virt = "0.1.0-alpha.1"
 

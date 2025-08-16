@@ -7,6 +7,8 @@ use std::str::FromStr;
 // use netstat2::iterate_sockets_info_without_pids;
 use sysinfo::{Disks, Networks, System};
 use tokio::task::JoinHandle;
+#[cfg(target_os = "windows")] // arm64 windows will face compile error here
+use raw_cpuid::CpuId;
 
 pub fn arch() -> String {
     // 直接返回常量，避免to_string()
@@ -126,15 +128,58 @@ pub async fn os() -> OsInfo {
     );
     let kernel_version = System::kernel_version().unwrap_or("Unknown".to_string());
 
-    #[cfg(target_os = "linux")]
-    let virt = heim_virt::detect()
-        .await
-        .unwrap_or(heim_virt::Virtualization::Unknown)
-        .as_str()
-        .to_string();
+    let virt = {
+        #[cfg(target_os = "linux")]
+        {
+            heim_virt::detect()
+                .await
+                .unwrap_or(heim_virt::Virtualization::Unknown)
+                .as_str()
+                .to_string()
+        }
 
-    #[cfg(not(target_os = "linux"))]
-    let virt = "Unknown".to_string();
+        #[cfg(target_os = "windows")]
+        {
+            let hypervisor_present = {
+                #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                {
+                    CpuId::new()
+                        .get_feature_info()
+                        .map(|f| f.has_hypervisor())
+                        .unwrap_or(false)
+                }
+                #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
+                {
+                    false
+                }
+            };
+
+            let hypervisor_vendor = {
+                #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                {
+                    if hypervisor_present {
+                        CpuId::new()
+                            .get_hypervisor_info()
+                            .map(|hv| format!("{:?}", hv.identify()))
+                    } else {
+                        None
+                    }
+                }
+                #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
+                {
+                    None
+                }
+            };
+
+            hypervisor_vendor.unwrap_or_else(|| "Unknown".to_string())
+        }
+        #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+        {
+            "Unknown".to_string()
+        }
+
+    };
+
 
     OsInfo {
         os,
