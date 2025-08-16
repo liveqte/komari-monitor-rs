@@ -149,10 +149,12 @@ async fn main() {
             let real_time = RealTimeInfo::build(&sysinfo_sys, &networks, &disks, args.fake);
 
             let json = json::to_string(&real_time);
-            let mut write = locked_write.lock().await;
-            if let Err(e) = write.send(Message::Text(Utf8Bytes::from(json))).await {
-                eprintln!("推送 RealTime 时发生错误，尝试重新连接: {e}");
-                break;
+            {
+                let mut write = locked_write.lock().await;
+                if let Err(e) = write.send(Message::Text(Utf8Bytes::from(json))).await {
+                    eprintln!("推送 RealTime 时发生错误，尝试重新连接: {e}");
+                    break;
+                }
             }
             let end_time = start_time.elapsed();
             println!("在 {}ms 内发送完毕 RealTime 数据", end_time.as_millis());
