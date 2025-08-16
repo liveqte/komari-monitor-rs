@@ -44,7 +44,7 @@ impl Args {
     pub fn par() -> Self {
         let args = Self::parse();
         unsafe {
-            DURATION = args.realtime_info_interval as f64 / 1000.0;
+            DURATION = args.realtime_info_interval as f64;
         }
         args
     }
