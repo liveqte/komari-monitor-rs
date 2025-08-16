@@ -1,3 +1,4 @@
+use crate::get_info::DURATION;
 use crate::rustls_config::create_dangerous_config;
 use clap::Parser;
 use std::sync::Arc;
@@ -41,7 +42,11 @@ pub struct Args {
 
 impl Args {
     pub fn par() -> Self {
-        Self::parse()
+        let args = Self::parse();
+        unsafe {
+            DURATION = args.realtime_info_interval as f64 / 1000.0;
+        }
+        args
     }
 }
 

@@ -196,6 +196,8 @@ pub fn realtime_load() -> Load {
     }
 }
 
+pub static mut DURATION: f64 = 0.0;
+
 pub fn realtime_network(network: &Networks) -> Network {
     let mut total_up = 0;
     let mut total_down = 0;
@@ -209,11 +211,13 @@ pub fn realtime_network(network: &Networks) -> Network {
         down += data.received();
     }
 
-    Network {
-        up,
-        down,
-        total_up,
-        total_down,
+    unsafe {
+        Network {
+            up: (up as f64 / DURATION / 1000.0) as u64,
+            down: (down as f64 / DURATION / 1000.0) as u64,
+            total_up,
+            total_down,
+        }
     }
 }
 

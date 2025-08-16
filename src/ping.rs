@@ -9,8 +9,8 @@ use std::time::Duration;
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 use tokio::net::TcpStream;
-use tokio::time::Instant;
 use tokio::net::lookup_host;
+use tokio::time::Instant;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PingEvent {
@@ -41,7 +41,10 @@ pub async fn get_ip_from_string(host_or_ip: &str) -> Result<IpAddr, String> {
             if let Some(first_socket_addr) = ip_addresses.next() {
                 Ok(first_socket_addr.ip())
             } else {
-                Err(format!("No IP addresses found for the domain: {}", host_or_ip))
+                Err(format!(
+                    "No IP addresses found for the domain: {}",
+                    host_or_ip
+                ))
             }
         }
         Err(e) => Err(format!("Error looking up domain: {}", e)),

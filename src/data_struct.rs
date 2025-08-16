@@ -1,4 +1,8 @@
-use crate::get_info::{arch, cpu_info_without_usage, ip, mem_info_without_usage, os, realtime_connections, realtime_cpu, realtime_disk, realtime_load, realtime_mem, realtime_network, realtime_process, realtime_swap, realtime_uptime};
+use crate::get_info::{
+    arch, cpu_info_without_usage, ip, mem_info_without_usage, os, realtime_connections,
+    realtime_cpu, realtime_disk, realtime_load, realtime_mem, realtime_network, realtime_process,
+    realtime_swap, realtime_uptime,
+};
 use miniserde::{Deserialize, Serialize};
 use sysinfo::{Disks, Networks};
 
