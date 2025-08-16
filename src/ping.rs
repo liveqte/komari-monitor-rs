@@ -30,28 +30,11 @@ pub struct PingEventCallback {
     pub finished_at: String,
 }
 
-pub async fn get_ip_from_string(host_or_ip: &str) -> Result<IpAddr, String> {
-    if let Ok(ip) = IpAddr::from_str(host_or_ip) {
-        return Ok(ip);
-    }
+// 直接接收字符串参数，避免重复解析
+pub async fn ping_target(utf8_str: &str) -> Result<PingEventCallback, String> {
+    let ping_event: PingEvent = miniserde::json::from_str(utf8_str)
+        .map_err(|_| "无法解析 PingEvent".to_string())?;
 
-    let host_with_port = format!("{}:80", host_or_ip);
-    match lookup_host(host_with_port).await {
-        Ok(mut ip_addresses) => {
-            if let Some(first_socket_addr) = ip_addresses.next() {
-                Ok(first_socket_addr.ip())
-            } else {
-                Err(format!(
-                    "No IP addresses found for the domain: {}",
-                    host_or_ip
-                ))
-            }
-        }
-        Err(e) => Err(format!("Error looking up domain: {}", e)),
-    }
-}
-
-pub async fn ping_target(ping_event: PingEvent) -> Result<PingEventCallback, String> {
     match ping_event.ping_type.as_str() {
         "icmp" => {
             #[cfg(not(target_os = "windows"))]
@@ -72,7 +55,7 @@ pub async fn ping_target(ping_event: PingEvent) -> Result<PingEventCallback, Str
 
             let ping = match tokio::time::timeout(
                 Duration::from_secs(10),
-                TcpStream::connect(ping_event.ping_target),
+                TcpStream::connect(&ping_event.ping_target), // 避免克隆
             )
             .await
             {
@@ -83,9 +66,10 @@ pub async fn ping_target(ping_event: PingEvent) -> Result<PingEventCallback, Str
 
             let rtt = start_time.elapsed();
 
+            let now = OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
+            let finished_at = now.format(&Rfc3339).unwrap_or_default();
+
             if let Ok(()) = ping {
-                let now = OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
-                let finished_at = now.format(&Rfc3339).unwrap_or_default();
                 Ok(PingEventCallback {
                     type_str: String::from("ping_result"),
                     task_id: ping_event.ping_task_id,
@@ -94,9 +78,6 @@ pub async fn ping_target(ping_event: PingEvent) -> Result<PingEventCallback, Str
                     finished_at,
                 })
             } else {
-                let now = OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
-                let finished_at = now.format(&Rfc3339).unwrap_or_default();
-
                 Ok(PingEventCallback {
                     type_str: String::from("ping_result"),
                     task_id: ping_event.ping_task_id,
@@ -108,14 +89,15 @@ pub async fn ping_target(ping_event: PingEvent) -> Result<PingEventCallback, Str
         }
         "http" => {
             let start_time = Instant::now();
-            if ureq::get(&ping_event.ping_target)
+            let result = ureq::get(&ping_event.ping_target) // 避免克隆
                 .header("User-Agent", "curl/11.45.14")
                 .call()
-                .is_ok()
-            {
-                let now = OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
-                let finished_at = now.format(&Rfc3339).unwrap_or_default();
+                .is_ok();
 
+            let now = OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
+            let finished_at = now.format(&Rfc3339).unwrap_or_default();
+
+            if result {
                 Ok(PingEventCallback {
                     type_str: String::from("ping_result"),
                     task_id: ping_event.ping_task_id,
@@ -124,9 +106,6 @@ pub async fn ping_target(ping_event: PingEvent) -> Result<PingEventCallback, Str
                     finished_at,
                 })
             } else {
-                let now = OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
-                let finished_at = now.format(&Rfc3339).unwrap_or_default();
-
                 Ok(PingEventCallback {
                     type_str: String::from("ping_result"),
                     task_id: ping_event.ping_task_id,
@@ -137,6 +116,27 @@ pub async fn ping_target(ping_event: PingEvent) -> Result<PingEventCallback, Str
             }
         }
         _ => Err(format!("Ping Error: Not Support: {}", ping_event.ping_type)),
+    }
+}
+
+pub async fn get_ip_from_string(host_or_ip: &str) -> Result<IpAddr, String> {
+    if let Ok(ip) = IpAddr::from_str(host_or_ip) {
+        return Ok(ip);
+    }
+
+    let host_with_port = format!("{}:80", host_or_ip);
+    match lookup_host(&host_with_port).await { // 避免克隆
+        Ok(mut ip_addresses) => {
+            if let Some(first_socket_addr) = ip_addresses.next() {
+                Ok(first_socket_addr.ip())
+            } else {
+                Err(format!(
+                    "No IP addresses found for the domain: {}",
+                    host_or_ip
+                ))
+            }
+        }
+        Err(e) => Err(format!("Error looking up domain: {}", e)),
     }
 }
 
@@ -166,24 +166,30 @@ pub async fn icmp_ipv4(ip: Ipv4Addr, task_id: u64) -> Result<PingEventCallback, 
 
     let send_time = Instant::now();
     if socket4.send_to(ip, packet).is_err() {
+        let now = OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
+        let finished_at = now.format(&Rfc3339).unwrap_or_default();
+        
         return Ok(PingEventCallback {
             type_str: String::from("ping_result"),
             task_id,
             ping_type: String::from("icmp"),
             value: None,
-            finished_at: String::new(),
+            finished_at,
         });
     }
 
     socket4.set_timeout(Some(Duration::from_secs(3)));
 
     let Ok((resp, _)) = socket4.rcv_from() else {
+        let now = OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
+        let finished_at = now.format(&Rfc3339).unwrap_or_default();
+        
         return Ok(PingEventCallback {
             type_str: String::from("ping_result"),
             task_id,
             ping_type: String::from("icmp"),
             value: None,
-            finished_at: String::new(),
+            finished_at,
         });
     };
 
@@ -240,24 +246,30 @@ pub async fn icmp_ipv6(ip: Ipv6Addr, task_id: u64) -> Result<PingEventCallback, 
     let send_time = Instant::now();
 
     if socket6.send_to(ip, packet).is_err() {
+        let now = OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
+        let finished_at = now.format(&Rfc3339).unwrap_or_default();
+        
         return Ok(PingEventCallback {
             type_str: String::from("ping_result"),
             task_id,
             ping_type: String::from("icmp"),
             value: None,
-            finished_at: String::new(),
+            finished_at,
         });
     }
 
     socket6.set_timeout(Some(Duration::from_secs(3)));
 
     let Ok((resp, _)) = socket6.rcv_from() else {
+        let now = OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
+        let finished_at = now.format(&Rfc3339).unwrap_or_default();
+        
         return Ok(PingEventCallback {
             type_str: String::from("ping_result"),
             task_id,
             ping_type: String::from("icmp"),
             value: None,
-            finished_at: String::new(),
+            finished_at,
         });
     };
 

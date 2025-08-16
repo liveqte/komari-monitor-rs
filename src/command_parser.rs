@@ -57,26 +57,25 @@ pub async fn connect_ws(
 ) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, String> {
     if tls {
         if !skip_verify {
-            if let Ok(ws) = connect_async_tls_with_config(url, None, false, None).await {
-                Ok(ws.0)
-            } else {
-                Err("无法创立 WebSocket 连接".into())
-            }
-        } else if let Ok(ws) = connect_async_tls_with_config(
-            url,
-            None,
-            false,
-            Some(Connector::Rustls(Arc::new(create_dangerous_config()))),
-        )
-        .await
-        {
-            Ok(ws.0)
+            connect_async_tls_with_config(url, None, false, None)
+                .await
+                .map(|ws| ws.0)
+                .map_err(|_| "无法创立 WebSocket 连接".into())
         } else {
-            Err("无法创立 WebSocket 连接".to_string())
+            connect_async_tls_with_config(
+                url,
+                None,
+                false,
+                Some(Connector::Rustls(Arc::new(create_dangerous_config()))),
+            )
+            .await
+            .map(|ws| ws.0)
+            .map_err(|_| "无法创立 WebSocket 连接".to_string())
         }
-    } else if let Ok(ws) = connect_async(url).await {
-        Ok(ws.0)
     } else {
-        Err("无法创立 WebSocket 连接".to_string())
+        connect_async(url)
+            .await
+            .map(|ws| ws.0)
+            .map_err(|_| "无法创立 WebSocket 连接".to_string())
     }
 }

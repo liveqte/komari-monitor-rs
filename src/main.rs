@@ -77,13 +77,7 @@ async fn main() {
                         "exec" => {
                             if let Err(e) = {
                                 exec_command(
-                                    {
-                                        if let Ok(parsed) = json::from_str(utf8.as_str()) {
-                                            parsed
-                                        } else {
-                                            continue;
-                                        }
-                                    },
+                                    utf8.as_str(), // 修复语法错误
                                     &exec_callback_url,
                                 )
                                 .await
@@ -92,11 +86,9 @@ async fn main() {
                             }
                         }
                         "ping" => {
-                            let Ok(parsed) = json::from_str(utf8.as_str()) else {
-                                continue;
-                            };
-
-                            match ping_target(parsed).await {
+                            // 避免重复解析
+                            let utf8_str = utf8.as_str();
+                            match ping_target(utf8_str).await {
                                 Ok(json) => {
                                     let mut write = locked_write.lock().await;
                                     println!("Ping Success: {}", json::to_string(&json));
@@ -161,7 +153,7 @@ async fn main() {
             sleep(Duration::from_millis({
                 let end = u64::try_from(end_time.as_millis()).unwrap_or(0);
                 if end > args.realtime_info_interval {
-                    continue;
+                    0 // 避免溢出
                 } else {
                     args.realtime_info_interval - end
                 }

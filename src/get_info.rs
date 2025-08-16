@@ -1,5 +1,5 @@
 use crate::data_struct::{Connections, Cpu, Disk, Load, Network, Ram, Swap};
-use miniserde::{Deserialize, Serialize, json};
+use miniserde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs;
 use std::net::{Ipv4Addr, Ipv6Addr};
@@ -9,26 +9,24 @@ use sysinfo::{Disks, Networks, System};
 use tokio::task::JoinHandle;
 
 pub fn arch() -> String {
-    let arch = std::env::consts::ARCH;
-    arch.to_string()
+    // 直接返回常量，避免to_string()
+    std::env::consts::ARCH.to_string()
 }
 
 pub struct CPUInfoWithOutUsage {
     pub name: String,
     pub cores: u16,
 }
+
 pub fn cpu_info_without_usage(sysinfo_sys: &System) -> CPUInfoWithOutUsage {
-    let cores = u16::try_from(sysinfo_sys.cpus().len());
+    let cores = u16::try_from(sysinfo_sys.cpus().len()).unwrap_or(0);
     let mut hashset = HashSet::new();
     for cpu in sysinfo_sys.cpus() {
         hashset.insert(cpu.brand().to_string());
     }
     let name = hashset.into_iter().collect::<Vec<String>>().join(", ");
 
-    CPUInfoWithOutUsage {
-        name,
-        cores: cores.unwrap_or(0),
-    }
+    CPUInfoWithOutUsage { name, cores }
 }
 
 #[derive(Debug)]
@@ -78,7 +76,7 @@ pub async fn ip() -> IPInfo {
             return None;
         };
 
-        let json: IpIo = if let Ok(json) = json::from_str(&body) {
+        let json: IpIo = if let Ok(json) = miniserde::json::from_str(&body) {
             json
         } else {
             return None;
@@ -99,7 +97,7 @@ pub async fn ip() -> IPInfo {
             return None;
         };
 
-        let json: IpIo = if let Ok(json) = json::from_str(&body) {
+        let json: IpIo = if let Ok(json) = miniserde::json::from_str(&body) {
             json
         } else {
             return None;
@@ -291,13 +289,8 @@ pub fn realtime_process() -> u64 {
         return 0;
     };
 
-    for entry in entries {
-        let Ok(entry) = entry else {
-            continue;
-        };
-
+    for entry in entries.flatten() {
         let file_name = entry.file_name();
-
         if let Some(name_str) = file_name.to_str() {
             if name_str.parse::<u32>().is_ok() {
                 process_count += 1;

@@ -19,11 +19,15 @@ pub struct RemoteExecCallback {
     finished_at: String,
 }
 
-pub async fn exec_command(remote_exec: RemoteExec, callback_url: &str) -> Result<(), String> {
+// 直接接收字符串而不是结构体，避免重复解析
+pub async fn exec_command(utf8_str: &str, callback_url: &str) -> Result<(), String> {
+    let remote_exec: RemoteExec = json::from_str(utf8_str)
+        .map_err(|_| "无法解析 RemoteExec".to_string())?;
+
     let exec = tokio::spawn(async move {
         let Ok(child) = Command::new("bash")
             .arg("-c")
-            .arg(remote_exec.command)
+            .arg(&remote_exec.command) // 避免克隆
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
@@ -40,7 +44,7 @@ pub async fn exec_command(remote_exec: RemoteExec, callback_url: &str) -> Result
 
         let status = output.status.code().unwrap_or(1);
 
-        Ok((status, format!("{stdout_str}\n{stderr_str}")))
+        Ok((status, format!("{}{}", stdout_str, stderr_str))) // 简化字符串拼接
     });
 
     let Ok(Ok((status, output))) = exec.await else {
@@ -57,7 +61,9 @@ pub async fn exec_command(remote_exec: RemoteExec, callback_url: &str) -> Result
         finished_at,
     };
 
-    if let Ok(req) = ureq::post(callback_url).send(&json::to_string(&reply)) {
+    // 使用更少的内存方式发送请求
+    let json_string = json::to_string(&reply);
+    if let Ok(req) = ureq::post(callback_url).send(&json_string) {
         if req.status().is_success() {
             Ok(())
         } else {

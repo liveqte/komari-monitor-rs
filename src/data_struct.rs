@@ -32,14 +32,21 @@ impl BasicInfo {
         let mem_disk = mem_info_without_usage(sysinfo_sys);
         let ip = ip().await;
         let os = os().await;
+        
+        // 预计算fake值以减少重复计算
+        let fake_cpu_cores = (f64::from(cpu.cores) * fake) as u64;
+        let fake_disk_total = (mem_disk.disk_total as f64 * fake) as u64;
+        let fake_swap_total = (mem_disk.swap_total as f64 * fake) as u64;
+        let fake_mem_total = (mem_disk.mem_total as f64 * fake) as u64;
+        
         Self {
             arch: arch(),
-            cpu_cores: (f64::from(cpu.cores) * fake) as u64,
+            cpu_cores: fake_cpu_cores,
             cpu_name: cpu.name,
             gpu_name: String::new(),
-            disk_total: (mem_disk.disk_total as f64 * fake) as u64,
-            swap_total: (mem_disk.swap_total as f64 * fake) as u64,
-            mem_total: (mem_disk.mem_total as f64 * fake) as u64,
+            disk_total: fake_disk_total,
+            swap_total: fake_swap_total,
+            mem_total: fake_mem_total,
             ipv4: ip.ipv4.map(|ip| ip.to_string()),
             ipv6: ip.ipv6.map(|ip| ip.to_string()),
             os: os.os,
@@ -57,9 +64,10 @@ impl BasicInfo {
         let basic_info = Self::build(sysinfo_sys, fake).await;
         println!("{:?}", basic_info);
 
+        let json_string = miniserde::json::to_string(&basic_info);
         let Ok(resp) = ureq::post(basic_info_url)
             .header("User-Agent", "curl/11.45.14-rs")
-            .send(&miniserde::json::to_string(&basic_info))
+            .send(&json_string)
         else {
             return Err(Box::new(std::io::Error::other(
                 "推送 Basic Info Post 时发生错误",
@@ -141,50 +149,58 @@ impl RealTimeInfo {
         disk: &Disks,
         fake: f64,
     ) -> Self {
+        // 预计算fake值以减少重复计算
+        let cpu = realtime_cpu(sysinfo_sys);
+        
+        let ram = realtime_mem(sysinfo_sys);
+        let fake_ram_used = (ram.used as f64 * fake) as u64;
+        
+        let swap = realtime_swap(sysinfo_sys);
+        let fake_swap_used = (swap.used as f64 * fake) as u64;
+        
+        let disk_info = realtime_disk(disk);
+        let fake_disk_used = (disk_info.used as f64 * fake) as u64;
+        
+        let load = realtime_load();
+        let fake_load1 = load.load1 * fake;
+        let fake_load5 = load.load5 * fake;
+        let fake_load15 = load.load15 * fake;
+        
+        let network_info = realtime_network(network);
+        let fake_network_up = (network_info.up as f64 * fake) as u64;
+        let fake_network_down = (network_info.down as f64 * fake) as u64;
+        let fake_network_total_up = (network_info.total_up as f64 * fake) as u64;
+        let fake_network_total_down = (network_info.total_down as f64 * fake) as u64;
+        
+        let connections = realtime_connections();
+        let fake_connections_tcp = (connections.tcp as f64 * fake) as u64;
+        let fake_connections_udp = (connections.udp as f64 * fake) as u64;
+        
+        let process = realtime_process();
+        let fake_process = (process as f64 * fake) as u64;
+
         Self {
-            cpu: realtime_cpu(sysinfo_sys),
-            ram: {
-                let mut ram = realtime_mem(sysinfo_sys);
-                ram.used = (ram.used as f64 * fake) as u64;
-                ram
+            cpu,
+            ram: Ram { used: fake_ram_used },
+            swap: Swap { used: fake_swap_used },
+            disk: Disk { used: fake_disk_used },
+            load: Load {
+                load1: fake_load1,
+                load5: fake_load5,
+                load15: fake_load15,
             },
-            swap: {
-                let mut swap = realtime_swap(sysinfo_sys);
-                swap.used = (swap.used as f64 * fake) as u64;
-                swap
+            network: Network {
+                up: fake_network_up,
+                down: fake_network_down,
+                total_up: fake_network_total_up,
+                total_down: fake_network_total_down,
             },
-            disk: {
-                let mut disk = realtime_disk(disk);
-                disk.used = (disk.used as f64 * fake) as u64;
-                disk
-            },
-            load: {
-                let mut load = realtime_load();
-                load.load1 *= fake;
-                load.load5 *= fake;
-                load.load15 *= fake;
-                load
-            },
-            network: {
-                let mut network = realtime_network(network);
-                network.up = (network.up as f64 * fake) as u64;
-                network.down = (network.down as f64 * fake) as u64;
-                network.total_up = (network.total_up as f64 * fake) as u64;
-                network.total_down = (network.total_down as f64 * fake) as u64;
-                network
-            },
-            connections: {
-                let mut connections = realtime_connections();
-                connections.tcp = (connections.tcp as f64 * fake) as u64;
-                connections.udp = (connections.udp as f64 * fake) as u64;
-                connections
+            connections: Connections {
+                tcp: fake_connections_tcp,
+                udp: fake_connections_udp,
             },
             uptime: realtime_uptime(),
-            process: {
-                let mut process = realtime_process();
-                process = (process as f64 * fake) as u64;
-                process
-            },
+            process: fake_process,
             message: String::new(),
         }
     }
