@@ -5,7 +5,8 @@
 
 ## About
 
-`Komari-Monitor-rs` 是一个适用于 [komari-monitor](https://github.com/komari-monitor) 监控服务的第三方**高性能**监控 Agent
+`Komari-Monitor-rs` 是一个适用于 [komari-monitor](https://github.com/komari-monitor) 监控服务的第三方**高性能**监控
+Agent
 
 致力于实现[原版 Agent](https://github.com/komari-monitor/komari-agent) 的所有功能，并拓展更多功能
 
@@ -40,9 +41,11 @@
 ### 实现功能
 
 目前，本项目已经实现原版的大部分功能，但还有以下的差异:
+
 - GPU Name 检测
 
 除此之外，还有希望添加的功能:
+
 - 自动更新
 - 自动安装
 - Bash / PWSH 一键脚本
@@ -93,7 +96,8 @@ Options:
 
 `--fake` 参数可以让你的小鸡拥有无穷的算力，装逼必备
 
-现已支持 PTY 功能，可以从管理面板取得 TTY 终端。由于安全问题，需要手动设置 `--terminal` 参数以开启该功能，并可通过 `--terminal-entry` 参数自定义终端入口 (Windows 默认 cmd.exe，其它系统默认 bash)
+现已支持 PTY 功能，可以从管理面板取得 TTY 终端。由于安全问题，需要手动设置 `--terminal` 参数以开启该功能，并可通过
+`--terminal-entry` 参数自定义终端入口 (Windows 默认 cmd.exe，其它系统默认 bash)
 
 Demo:
 

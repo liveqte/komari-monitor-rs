@@ -1,12 +1,12 @@
 #![warn(clippy::all, clippy::pedantic)]
 
-use crate::command_parser::{Args, connect_ws};
+use crate::command_parser::{connect_ws, Args};
 use crate::data_struct::{BasicInfo, RealTimeInfo};
 use crate::exec::exec_command;
 use crate::ping::ping_target;
 use crate::pty::{get_pty_ws_link, handle_pty_session};
 use futures::{SinkExt, StreamExt};
-use miniserde::{Deserialize, Serialize, json};
+use miniserde::{json, Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::Duration;
 use sysinfo::{CpuRefreshKind, DiskRefreshKind, Disks, MemoryRefreshKind, Networks, RefreshKind};
@@ -199,11 +199,7 @@ async fn main() {
 
             sleep(Duration::from_millis({
                 let end = u64::try_from(end_time.as_millis()).unwrap_or(0);
-                if end > args.realtime_info_interval {
-                    0 // 避免溢出
-                } else {
-                    args.realtime_info_interval - end
-                }
+                args.realtime_info_interval.saturating_sub(end)
             }))
             .await;
         }

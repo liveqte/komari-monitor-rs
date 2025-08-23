@@ -1,7 +1,7 @@
-use miniserde::{Deserialize, Serialize, json};
+use miniserde::{json, Deserialize, Serialize};
 use std::process::Stdio;
-use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
+use time::OffsetDateTime;
 use tokio::process::Command;
 
 use crate::rustls_config::create_ureq_agent;
@@ -50,7 +50,7 @@ pub async fn exec_command(
 
         let status = output.status.code().unwrap_or(1);
 
-        Ok((status, format!("{}{}", stdout_str, stderr_str))) // 简化字符串拼接
+        Ok((status, format!("{stdout_str}{stderr_str}"))) // 简化字符串拼接
     });
 
     let Ok(Ok((status, output))) = exec.await else {

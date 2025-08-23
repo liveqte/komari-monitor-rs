@@ -66,7 +66,7 @@ impl BasicInfo {
         ignore_unsafe_cert: bool,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let basic_info = Self::build(sysinfo_sys, fake).await;
-        println!("{:?}", basic_info);
+        println!("{basic_info:?}");
 
         let json_string = miniserde::json::to_string(&basic_info);
 
@@ -76,20 +76,15 @@ impl BasicInfo {
             .post(basic_info_url)
             .header("User-Agent", "curl/11.45.14-rs")
             .send(&json_string)
-            .map_err(|e| {
-                std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!("推送 Basic Info Post 时发生错误: {}", e),
-                )
-            })?;
+            .map_err(|e| std::io::Error::other(format!("推送 Basic Info Post 时发生错误: {e}")))?;
 
         if resp.status().is_success() {
             Ok(())
         } else {
-            Err(Box::new(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("推送 Basic Info 失败，HTTP 状态码: {}", resp.status()),
-            )))
+            Err(Box::new(std::io::Error::other(format!(
+                "推送 Basic Info 失败，HTTP 状态码: {}",
+                resp.status()
+            ))))
         }
     }
 }

@@ -86,5 +86,5 @@ pub fn create_ureq_agent(disable_verification: bool) -> ureq::Agent {
                 .build(),
         )
         .build();
-    return config.new_agent();
+    config.new_agent()
 }

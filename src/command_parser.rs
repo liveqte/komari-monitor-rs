@@ -4,7 +4,7 @@ use clap::Parser;
 use std::sync::Arc;
 use tokio::net::TcpStream;
 use tokio_tungstenite::{
-    Connector, MaybeTlsStream, WebSocketStream, connect_async, connect_async_tls_with_config,
+    connect_async, connect_async_tls_with_config, Connector, MaybeTlsStream, WebSocketStream,
 };
 
 /// Komari Monitor Agent
@@ -77,12 +77,7 @@ pub async fn connect_ws(
     skip_verify: bool,
 ) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, String> {
     if tls {
-        if !skip_verify {
-            connect_async_tls_with_config(url, None, false, None)
-                .await
-                .map(|ws| ws.0)
-                .map_err(|_| "无法创立 WebSocket 连接".into())
-        } else {
+        if skip_verify {
             connect_async_tls_with_config(
                 url,
                 None,
@@ -92,6 +87,11 @@ pub async fn connect_ws(
             .await
             .map(|ws| ws.0)
             .map_err(|_| "无法创立 WebSocket 连接".to_string())
+        } else {
+            connect_async_tls_with_config(url, None, false, None)
+                .await
+                .map(|ws| ws.0)
+                .map_err(|_| "无法创立 WebSocket 连接".into())
         }
     } else {
         connect_async(url)

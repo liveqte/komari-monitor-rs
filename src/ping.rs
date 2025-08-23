@@ -6,10 +6,10 @@ use miniserde::{Deserialize, Serialize};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
 use std::time::Duration;
-use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
-use tokio::net::TcpStream;
+use time::OffsetDateTime;
 use tokio::net::lookup_host;
+use tokio::net::TcpStream;
 use tokio::time::Instant;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -124,7 +124,7 @@ pub async fn get_ip_from_string(host_or_ip: &str) -> Result<IpAddr, String> {
         return Ok(ip);
     }
 
-    let host_with_port = format!("{}:80", host_or_ip);
+    let host_with_port = format!("{host_or_ip}:80");
     match lookup_host(&host_with_port).await {
         // 避免克隆
         Ok(mut ip_addresses) => {
@@ -132,12 +132,11 @@ pub async fn get_ip_from_string(host_or_ip: &str) -> Result<IpAddr, String> {
                 Ok(first_socket_addr.ip())
             } else {
                 Err(format!(
-                    "No IP addresses found for the domain: {}",
-                    host_or_ip
+                    "No IP addresses found for the domain: {host_or_ip}"
                 ))
             }
         }
-        Err(e) => Err(format!("Error looking up domain: {}", e)),
+        Err(e) => Err(format!("Error looking up domain: {e}")),
     }
 }
 

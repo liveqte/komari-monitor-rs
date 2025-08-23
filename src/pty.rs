@@ -5,7 +5,7 @@ use std::io::{Read, Write};
 use std::sync::{Arc, Mutex};
 use tokio::{sync::mpsc, task};
 use tokio_tungstenite::tungstenite::Bytes;
-use tokio_tungstenite::{WebSocketStream, tungstenite::protocol::Message};
+use tokio_tungstenite::{tungstenite::protocol::Message, WebSocketStream};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TerminalEvent {
@@ -99,7 +99,7 @@ where
             match result {
                 Ok(msg) => match handle_ws_message(msg, &pty_writer).await {
                     Err(e) => {
-                        println!("处理 WebSocket 消息失败: {}", e);
+                        println!("处理 WebSocket 消息失败: {e}");
                         break;
                     }
                     Ok(Some(resize)) => {
@@ -109,13 +109,13 @@ where
                             pixel_width: 0,
                             pixel_height: 0,
                         }) {
-                            println!("无法调整 PTY 大小: {}", e);
+                            println!("无法调整 PTY 大小: {e}");
                         }
                     }
                     _ => {}
                 },
                 Err(e) => {
-                    println!("从 WebSocket 接收消息时出错: {}", e);
+                    println!("从 WebSocket 接收消息时出错: {e}");
                     break;
                 }
             }
@@ -129,7 +129,7 @@ where
 
     println!("正在关闭会话，终止子进程...");
     if let Err(e) = child.kill() {
-        println!("终止子进程失败: {}", e);
+        println!("终止子进程失败: {e}");
     }
     child.wait().map_err(|e| format!("无法终止子线程: {e}"))?;
     println!("会话已成功关闭。");
@@ -158,10 +158,10 @@ async fn handle_ws_message(
 
     match msg {
         Message::Text(text) => {
-            if let Ok(_) = miniserde::json::from_str::<HeartBeat>(&text.to_string()) {
+            if miniserde::json::from_str::<HeartBeat>(text.as_ref()).is_ok() {
                 return Ok(None);
             }
-            if let Ok(resize) = miniserde::json::from_str::<NeedResize>(&text.to_string()) {
+            if let Ok(resize) = miniserde::json::from_str::<NeedResize>(text.as_ref()) {
                 return Ok(Some(resize));
             }
             pty_writer

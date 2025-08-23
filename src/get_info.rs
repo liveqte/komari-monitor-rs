@@ -1,12 +1,12 @@
 use crate::data_struct::{Connections, Cpu, Disk, Load, Network, Ram, Swap};
 use miniserde::{Deserialize, Serialize};
+// use netstat2::iterate_sockets_info_without_pids;
+#[cfg(target_os = "windows")] // arm64 windows will face compile error here
+use raw_cpuid::CpuId;
 use std::collections::HashSet;
 use std::fs;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
-// use netstat2::iterate_sockets_info_without_pids;
-#[cfg(target_os = "windows")] // arm64 windows will face compile error here
-use raw_cpuid::CpuId;
 use sysinfo::{Disks, Networks, System};
 use tokio::task::JoinHandle;
 
@@ -145,8 +145,7 @@ pub async fn os() -> OsInfo {
                 {
                     CpuId::new()
                         .get_feature_info()
-                        .map(|f| f.has_hypervisor())
-                        .unwrap_or(false)
+                        .is_some_and(|f| f.has_hypervisor())
                 }
                 #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
                 {
@@ -265,7 +264,7 @@ pub fn realtime_network(network: &Networks) -> Network {
 #[cfg(target_os = "linux")]
 pub fn realtime_connections() -> Connections {
     use netstat2::{
-        AddressFamilyFlags, ProtocolFlags, ProtocolSocketInfo, iterate_sockets_info_without_pids,
+        iterate_sockets_info_without_pids, AddressFamilyFlags, ProtocolFlags, ProtocolSocketInfo,
     };
     let af_flags = AddressFamilyFlags::IPV4 | AddressFamilyFlags::IPV6;
     let proto_flags = ProtocolFlags::TCP | ProtocolFlags::UDP;
@@ -291,7 +290,7 @@ pub fn realtime_connections() -> Connections {
 
 #[cfg(target_os = "windows")]
 pub fn realtime_connections() -> Connections {
-    use netstat2::{ProtocolFlags, ProtocolSocketInfo, iterate_sockets_info_without_pids};
+    use netstat2::{iterate_sockets_info_without_pids, ProtocolFlags, ProtocolSocketInfo};
     let proto_flags = ProtocolFlags::TCP | ProtocolFlags::UDP;
 
     let sockets_iterator = match iterate_sockets_info_without_pids(proto_flags) {
