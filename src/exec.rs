@@ -21,8 +21,8 @@ pub struct RemoteExecCallback {
 
 // 直接接收字符串而不是结构体，避免重复解析
 pub async fn exec_command(utf8_str: &str, callback_url: &str) -> Result<(), String> {
-    let remote_exec: RemoteExec = json::from_str(utf8_str)
-        .map_err(|_| "无法解析 RemoteExec".to_string())?;
+    let remote_exec: RemoteExec =
+        json::from_str(utf8_str).map_err(|_| "无法解析 RemoteExec".to_string())?;
 
     let exec = tokio::spawn(async move {
         let Ok(child) = Command::new("bash")

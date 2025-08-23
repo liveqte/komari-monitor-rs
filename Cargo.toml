@@ -1,6 +1,6 @@
 [package]
 name = "komari-monitor-rs"
-version = "0.0.10"
+version = "0.1.1"
 edition = "2024"
 authors = ["GenshinMinecrat <gm@highp.ing>"]
 description = "Komari Monitor Agent in Rust"
@@ -12,16 +12,15 @@ tokio = { version = "1.46.1", default-features = false, features = ["rt-multi-th
 rustls = { version = "0.23.28", default-features = false, features = ["ring"] }
 rustls-pki-types = "1.12.0"
 futures = { version = "0.3.31", default-features = false, features = ["std"] }
-
 miniserde = { version = "0.1.42", default-features = false, features = ["std"] }
 tokio-tungstenite = { version = "0.27.0", default-features = false, features = ["rustls-tls-webpki-roots", "connect"] }
 ureq = { version = "3.0.12", default-features = false, features = ["gzip", "rustls"] }
 clap = { version = "4.5.40", default-features = false, features = ["std", "derive", "usage", "help"] }
-
-sysinfo = { version = "0.35.2", default-features = false, features = ["disk", "system", "multithread", "network"] }
+sysinfo = { version = "0.37.0", default-features = false, features = ["disk", "system", "multithread", "network"] }
 time = { version = "0.3.41", default-features = false, features = ["local-offset", "formatting"] }
 icmp-socket = "0.2.0"
 netstat2 = "0.11.1"
+portable-pty = "0.7.0"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 raw-cpuid = "11.5.0"

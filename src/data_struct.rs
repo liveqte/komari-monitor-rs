@@ -32,13 +32,13 @@ impl BasicInfo {
         let mem_disk = mem_info_without_usage(sysinfo_sys);
         let ip = ip().await;
         let os = os().await;
-        
+
         // 预计算fake值以减少重复计算
         let fake_cpu_cores = (f64::from(cpu.cores) * fake) as u64;
         let fake_disk_total = (mem_disk.disk_total as f64 * fake) as u64;
         let fake_swap_total = (mem_disk.swap_total as f64 * fake) as u64;
         let fake_mem_total = (mem_disk.mem_total as f64 * fake) as u64;
-        
+
         Self {
             arch: arch(),
             cpu_cores: fake_cpu_cores,
@@ -151,39 +151,45 @@ impl RealTimeInfo {
     ) -> Self {
         // 预计算fake值以减少重复计算
         let cpu = realtime_cpu(sysinfo_sys);
-        
+
         let ram = realtime_mem(sysinfo_sys);
         let fake_ram_used = (ram.used as f64 * fake) as u64;
-        
+
         let swap = realtime_swap(sysinfo_sys);
         let fake_swap_used = (swap.used as f64 * fake) as u64;
-        
+
         let disk_info = realtime_disk(disk);
         let fake_disk_used = (disk_info.used as f64 * fake) as u64;
-        
+
         let load = realtime_load();
         let fake_load1 = load.load1 * fake;
         let fake_load5 = load.load5 * fake;
         let fake_load15 = load.load15 * fake;
-        
+
         let network_info = realtime_network(network);
         let fake_network_up = (network_info.up as f64 * fake) as u64;
         let fake_network_down = (network_info.down as f64 * fake) as u64;
         let fake_network_total_up = (network_info.total_up as f64 * fake) as u64;
         let fake_network_total_down = (network_info.total_down as f64 * fake) as u64;
-        
+
         let connections = realtime_connections();
         let fake_connections_tcp = (connections.tcp as f64 * fake) as u64;
         let fake_connections_udp = (connections.udp as f64 * fake) as u64;
-        
+
         let process = realtime_process();
         let fake_process = (process as f64 * fake) as u64;
 
         Self {
             cpu,
-            ram: Ram { used: fake_ram_used },
-            swap: Swap { used: fake_swap_used },
-            disk: Disk { used: fake_disk_used },
+            ram: Ram {
+                used: fake_ram_used,
+            },
+            swap: Swap {
+                used: fake_swap_used,
+            },
+            disk: Disk {
+                used: fake_disk_used,
+            },
             load: Load {
                 load1: fake_load1,
                 load5: fake_load5,

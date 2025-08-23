@@ -5,10 +5,10 @@ use std::fs;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
 // use netstat2::iterate_sockets_info_without_pids;
-use sysinfo::{Disks, Networks, System};
-use tokio::task::JoinHandle;
 #[cfg(target_os = "windows")] // arm64 windows will face compile error here
 use raw_cpuid::CpuId;
+use sysinfo::{Disks, Networks, System};
+use tokio::task::JoinHandle;
 
 pub fn arch() -> String {
     // 直接返回常量，避免to_string()
@@ -177,9 +177,7 @@ pub async fn os() -> OsInfo {
         {
             "Unknown".to_string()
         }
-
     };
-
 
     OsInfo {
         os,

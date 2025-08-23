@@ -23,6 +23,14 @@ pub struct Args {
     #[arg(short, long)]
     pub token: String,
 
+    /// 启用 Terminal (默认关闭)
+    #[arg(long, default_value_t = false)]
+    pub terminal: bool,
+
+    /// 自定义 Terminal 入口
+    #[arg(long, default_value_t = terminal_entry())]
+    pub terminal_entry: String,
+
     /// 设置虚假倍率
     #[arg(short, long, default_value_t = 1.0)]
     pub fake: f64,
@@ -40,11 +48,24 @@ pub struct Args {
     pub ignore_unsafe_cert: bool,
 }
 
+fn terminal_entry() -> String {
+    "default".to_string()
+}
+
 impl Args {
     pub fn par() -> Self {
-        let args = Self::parse();
+        let mut args = Self::parse();
         unsafe {
             DURATION = args.realtime_info_interval as f64;
+        }
+        if args.terminal_entry == "default" {
+            args.terminal_entry = {
+                if cfg!(windows) {
+                    "cmd.exe".to_string()
+                } else {
+                    "bash".to_string()
+                }
+            };
         }
         args
     }

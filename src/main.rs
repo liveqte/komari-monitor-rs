@@ -4,6 +4,7 @@ use crate::command_parser::{Args, connect_ws};
 use crate::data_struct::{BasicInfo, RealTimeInfo};
 use crate::exec::exec_command;
 use crate::ping::ping_target;
+use crate::pty::{get_pty_ws_link, handle_pty_session};
 use futures::{SinkExt, StreamExt};
 use miniserde::{Deserialize, Serialize, json};
 use std::sync::Arc;
@@ -18,6 +19,7 @@ mod data_struct;
 mod exec;
 mod get_info;
 mod ping;
+mod pty;
 mod rustls_config;
 
 #[tokio::main]
@@ -50,6 +52,7 @@ async fn main() {
         let _listener = tokio::spawn({
             let exec_callback_url = exec_callback_url.clone();
             let locked_write = locked_write.clone();
+            let args = args.clone();
             async move {
                 while let Some(msg) = read.next().await {
                     let Ok(msg) = msg else {
@@ -86,7 +89,6 @@ async fn main() {
                             }
                         }
                         "ping" => {
-                            // 避免重复解析
                             let utf8_str = utf8.as_str();
                             match ping_target(utf8_str).await {
                                 Ok(json) => {
@@ -104,6 +106,43 @@ async fn main() {
                                 Err(err) => {
                                     eprintln!("Ping Error: {err}");
                                 }
+                            }
+                        }
+                        "terminal" => {
+                            if args.terminal {
+                                let ws_url = match get_pty_ws_link(
+                                    utf8.as_str(),
+                                    args.ws_server.clone(),
+                                    args.token.clone(),
+                                ) {
+                                    Ok(ws_url) => ws_url,
+                                    Err(e) => {
+                                        eprintln!("无法获取 PTY Websocket URL: {e}");
+                                        continue;
+                                    }
+                                };
+
+                                let ws_stream = match connect_ws(
+                                    ws_url.as_str(),
+                                    args.tls,
+                                    args.ignore_unsafe_cert,
+                                )
+                                .await
+                                {
+                                    Ok(ws_stream) => ws_stream,
+                                    Err(e) => {
+                                        eprintln!("无法连接到 PTY Websocket: {e}");
+                                        continue;
+                                    }
+                                };
+
+                                if let Err(e) =
+                                    handle_pty_session(ws_stream, args.terminal_entry.clone()).await
+                                {
+                                    eprintln!("PTY Websocket 处理错误: {e}");
+                                }
+                            } else {
+                                eprintln!("终端功能未启用");
                             }
                         }
                         _ => {}
