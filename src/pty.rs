@@ -13,7 +13,7 @@ pub struct TerminalEvent {
     request_id: String,
 }
 
-pub fn get_pty_ws_link(utf8_str: &str, ws_base: String, token: String) -> Result<String, String> {
+pub fn get_pty_ws_link(utf8_str: &str, ws_base: &str, token: &str) -> Result<String, String> {
     let ping_event: TerminalEvent =
         miniserde::json::from_str(utf8_str).map_err(|_| "无法解析 TerminalEvent".to_string())?;
 
@@ -97,7 +97,7 @@ where
     let ws_to_pty_task = tokio::spawn(async move {
         while let Some(result) = ws_receiver.next().await {
             match result {
-                Ok(msg) => match handle_ws_message(msg, &pty_writer).await {
+                Ok(msg) => match handle_ws_message(msg, &pty_writer) {
                     Err(e) => {
                         println!("处理 WebSocket 消息失败: {e}");
                         break;
@@ -145,7 +145,7 @@ struct NeedResize {
     rows: u16,
 }
 
-async fn handle_ws_message(
+fn handle_ws_message(
     msg: Message,
     pty_writer: &Arc<Mutex<Box<dyn Write + Send>>>,
 ) -> Result<Option<NeedResize>, String> {

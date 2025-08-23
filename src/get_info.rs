@@ -293,19 +293,16 @@ pub fn realtime_connections() -> Connections {
     use netstat2::{iterate_sockets_info_without_pids, ProtocolFlags, ProtocolSocketInfo};
     let proto_flags = ProtocolFlags::TCP | ProtocolFlags::UDP;
 
-    let sockets_iterator = match iterate_sockets_info_without_pids(proto_flags) {
-        Ok(iterator) => iterator,
-        Err(_) => return Connections { tcp: 0, udp: 0 },
+    let Ok(sockets_iterator) = iterate_sockets_info_without_pids(proto_flags) else {
+        return Connections { tcp: 0, udp: 0 };
     };
 
     let (mut tcp_count, mut udp_count) = (0, 0);
 
-    for info_result in sockets_iterator {
-        if let Ok(info) = info_result {
-            match info.protocol_socket_info {
-                ProtocolSocketInfo::Tcp(_) => tcp_count += 1,
-                ProtocolSocketInfo::Udp(_) => udp_count += 1,
-            }
+    for info_result in sockets_iterator.flatten() {
+        match info_result.protocol_socket_info {
+            ProtocolSocketInfo::Tcp(_) => tcp_count += 1,
+            ProtocolSocketInfo::Udp(_) => udp_count += 1,
         }
     }
 

@@ -44,8 +44,8 @@ pub async fn ping_target(utf8_str: &str) -> Result<PingEventCallback, String> {
 
             match get_ip_from_string(&ping_event.ping_target).await {
                 Ok(ip) => match ip {
-                    IpAddr::V4(ip) => icmp_ipv4(ip, ping_event.ping_task_id).await,
-                    IpAddr::V6(ip) => icmp_ipv6(ip, ping_event.ping_task_id).await,
+                    IpAddr::V4(ip) => icmp_ipv4(ip, ping_event.ping_task_id),
+                    IpAddr::V6(ip) => icmp_ipv6(ip, ping_event.ping_task_id),
                 },
                 Err(_) => Err(String::from("无法解析 IP 地址")),
             }
@@ -140,7 +140,7 @@ pub async fn get_ip_from_string(host_or_ip: &str) -> Result<IpAddr, String> {
     }
 }
 
-pub async fn icmp_ipv4(ip: Ipv4Addr, task_id: u64) -> Result<PingEventCallback, String> {
+pub fn icmp_ipv4(ip: Ipv4Addr, task_id: u64) -> Result<PingEventCallback, String> {
     let Ok(mut socket4) = IcmpSocket4::new() else {
         return Err(String::from("无法创建 Raw 套接字"));
     };
@@ -222,7 +222,7 @@ pub async fn icmp_ipv4(ip: Ipv4Addr, task_id: u64) -> Result<PingEventCallback, 
     }
 }
 
-pub async fn icmp_ipv6(ip: Ipv6Addr, task_id: u64) -> Result<PingEventCallback, String> {
+pub fn icmp_ipv6(ip: Ipv6Addr, task_id: u64) -> Result<PingEventCallback, String> {
     let Ok(mut socket6) = IcmpSocket6::new() else {
         return Err(String::from("无法创建 Raw 套接字"));
     };

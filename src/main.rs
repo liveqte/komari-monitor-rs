@@ -113,8 +113,8 @@ async fn main() {
                             if args.terminal {
                                 let ws_url = match get_pty_ws_link(
                                     utf8.as_str(),
-                                    args.ws_server.clone(),
-                                    args.token.clone(),
+                                    &args.ws_server.clone(),
+                                    &args.token.clone(),
                                 ) {
                                     Ok(ws_url) => ws_url,
                                     Err(e) => {
