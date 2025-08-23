@@ -195,7 +195,6 @@ async fn main() {
                 }
             }
             let end_time = start_time.elapsed();
-            println!("在 {}ms 内发送完毕 RealTime 数据", end_time.as_millis());
 
             sleep(Duration::from_millis({
                 let end = u64::try_from(end_time.as_millis()).unwrap_or(0);
