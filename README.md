@@ -41,7 +41,6 @@
 
 目前，本项目已经实现原版的大部分功能，但还有以下的差异:
 - GPU Name 检测
-- PTY WebShell 实现
 
 除此之外，还有希望添加的功能:
 - 自动更新
@@ -61,18 +60,31 @@
 ```
 Komari Monitor Agent in Rust
 
-Usage: komari-monitor-rs [OPTIONS] --http-server <HTTP_SERVER> --ws-server <WS_SERVER> --token <TOKEN>
+Usage: komari-monitor-rs.exe [OPTIONS] --http-server <HTTP_SERVER> --ws-server <WS_SERVER> --token <TOKEN>
 
 Options:
-      --http-server <HTTP_SERVER>                        设置主端 Http 地址
-      --ws-server <WS_SERVER>                            设置主端 WebSocket 地址
-  -t, --token <TOKEN>                                    设置 Token
-  -f, --fake <FAKE>                                      设置虚假倍率 [default: 1]
-      --realtime-info-interval <REALTIME_INFO_INTERVAL>  设置 Real-Time Info 上传间隔时间 (ms) [default: 1000]
-      --tls                                              启用 TLS (默认关闭)
-      --ignore-unsafe-cert                               忽略证书验证
-  -h, --help                                             Print help
-  -V, --version                                          Print version
+      --http-server <HTTP_SERVER>
+          设置主端 Http 地址
+      --ws-server <WS_SERVER>
+          设置主端 WebSocket 地址
+  -t, --token <TOKEN>
+          设置 Token
+      --terminal
+          启用 Terminal (默认关闭)
+      --terminal-entry <TERMINAL_ENTRY>
+          自定义 Terminal 入口 [default: default]
+  -f, --fake <FAKE>
+          设置虚假倍率 [default: 1]
+      --realtime-info-interval <REALTIME_INFO_INTERVAL>
+          设置 Real-Time Info 上传间隔时间 (ms) [default: 1000]
+      --tls
+          启用 TLS (默认关闭)
+      --ignore-unsafe-cert
+          忽略证书验证
+  -h, --help
+          Print help
+  -V, --version
+          Print version
 ```
 
 必须设置 `--http-server` / `--ws-server` / `--token`
@@ -80,6 +92,8 @@ Options:
 在原版上，http 与 ws server 写在同一个参数上，本项目将其分离，便于在奇奇怪怪的环境下部署 (比如 ServerLess)
 
 `--fake` 参数可以让你的小鸡拥有无穷的算力，装逼必备
+
+现已支持 PTY 功能，可以从管理面板取得 TTY 终端。由于安全问题，需要手动设置 `--terminal` 参数以开启该功能，并可通过 `--terminal-entry` 参数自定义终端入口 (Windows 默认 cmd.exe，其它系统默认 bash)
 
 Demo:
 
