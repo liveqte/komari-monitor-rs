@@ -82,6 +82,7 @@ async fn main() {
                                 exec_command(
                                     utf8.as_str(), // 修复语法错误
                                     &exec_callback_url,
+                                    args.ignore_unsafe_cert,
                                 )
                                 .await
                             } {
@@ -161,7 +162,14 @@ async fn main() {
         );
         sysinfo_sys.refresh_memory_specifics(MemoryRefreshKind::everything());
 
-        if let Err(e) = BasicInfo::push(&sysinfo_sys, &basic_info_url, args.fake).await {
+        if let Err(e) = BasicInfo::push(
+            &sysinfo_sys,
+            &basic_info_url,
+            args.fake,
+            args.ignore_unsafe_cert,
+        )
+        .await
+        {
             eprintln!("推送 Basic Info 时发生错误: {e}");
         } else {
             println!("推送 Basic Info 成功");

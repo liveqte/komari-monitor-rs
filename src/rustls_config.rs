@@ -77,3 +77,14 @@ pub fn create_dangerous_config() -> ClientConfig {
         .with_custom_certificate_verifier(verifier)
         .with_no_client_auth()
 }
+
+pub fn create_ureq_agent(disable_verification: bool) -> ureq::Agent {
+    let config = ureq::Agent::config_builder()
+        .tls_config(
+            ureq::tls::TlsConfig::builder()
+                .disable_verification(disable_verification)
+                .build(),
+        )
+        .build();
+    return config.new_agent();
+}

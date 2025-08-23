@@ -1,7 +1,10 @@
-use crate::get_info::{
-    arch, cpu_info_without_usage, ip, mem_info_without_usage, os, realtime_connections,
-    realtime_cpu, realtime_disk, realtime_load, realtime_mem, realtime_network, realtime_process,
-    realtime_swap, realtime_uptime,
+use crate::{
+    get_info::{
+        arch, cpu_info_without_usage, ip, mem_info_without_usage, os, realtime_connections,
+        realtime_cpu, realtime_disk, realtime_load, realtime_mem, realtime_network,
+        realtime_process, realtime_swap, realtime_uptime,
+    },
+    rustls_config::create_ureq_agent,
 };
 use miniserde::{Deserialize, Serialize};
 use sysinfo::{Disks, Networks};
@@ -60,25 +63,32 @@ impl BasicInfo {
         sysinfo_sys: &sysinfo::System,
         basic_info_url: &str,
         fake: f64,
+        ignore_unsafe_cert: bool,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let basic_info = Self::build(sysinfo_sys, fake).await;
         println!("{:?}", basic_info);
 
         let json_string = miniserde::json::to_string(&basic_info);
-        let Ok(resp) = ureq::post(basic_info_url)
+
+        let agent = create_ureq_agent(ignore_unsafe_cert);
+
+        let resp = agent
+            .post(basic_info_url)
             .header("User-Agent", "curl/11.45.14-rs")
             .send(&json_string)
-        else {
-            return Err(Box::new(std::io::Error::other(
-                "推送 Basic Info Post 时发生错误",
-            )));
-        };
+            .map_err(|e| {
+                std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("推送 Basic Info Post 时发生错误: {}", e),
+                )
+            })?;
 
         if resp.status().is_success() {
             Ok(())
         } else {
-            Err(Box::new(std::io::Error::other(
-                "推送 Basic Info 时发生错误",
+            Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("推送 Basic Info 失败，HTTP 状态码: {}", resp.status()),
             )))
         }
     }

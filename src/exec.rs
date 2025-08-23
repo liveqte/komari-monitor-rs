@@ -4,6 +4,8 @@ use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 use tokio::process::Command;
 
+use crate::rustls_config::create_ureq_agent;
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RemoteExec {
     message: String,
@@ -20,7 +22,11 @@ pub struct RemoteExecCallback {
 }
 
 // 直接接收字符串而不是结构体，避免重复解析
-pub async fn exec_command(utf8_str: &str, callback_url: &str) -> Result<(), String> {
+pub async fn exec_command(
+    utf8_str: &str,
+    callback_url: &str,
+    ignore_unsafe_cert: bool,
+) -> Result<(), String> {
     let remote_exec: RemoteExec =
         json::from_str(utf8_str).map_err(|_| "无法解析 RemoteExec".to_string())?;
 
@@ -61,9 +67,11 @@ pub async fn exec_command(utf8_str: &str, callback_url: &str) -> Result<(), Stri
         finished_at,
     };
 
+    let agent = create_ureq_agent(ignore_unsafe_cert);
+
     // 使用更少的内存方式发送请求
     let json_string = json::to_string(&reply);
-    if let Ok(req) = ureq::post(callback_url).send(&json_string) {
+    if let Ok(req) = agent.post(callback_url).send(&json_string) {
         if req.status().is_success() {
             Ok(())
         } else {
