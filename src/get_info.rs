@@ -1,8 +1,4 @@
 use crate::data_struct::{Connections, Cpu, Disk, Load, Network, Ram, Swap};
-
-#[cfg(target_os = "windows")]
-use raw_cpuid::CpuId;
-
 use std::collections::HashSet;
 use std::fs;
 use std::net::{Ipv4Addr, Ipv6Addr};
@@ -147,6 +143,7 @@ pub async fn os() -> OsInfo {
 
         #[cfg(target_os = "windows")]
         {
+            use raw_cpuid::CpuId;
             let hypervisor_present = {
                 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
                 {
@@ -269,29 +266,25 @@ pub fn realtime_network(network: &Networks) -> Network {
 }
 
 #[cfg(target_os = "linux")]
-pub fn realtime_connections() -> Connections {
-    use netstat2::{
-        iterate_sockets_info_without_pids, AddressFamilyFlags, ProtocolFlags, ProtocolSocketInfo,
-    };
-    let af_flags = AddressFamilyFlags::IPV4 | AddressFamilyFlags::IPV6;
-    let proto_flags = ProtocolFlags::TCP | ProtocolFlags::UDP;
-
-    let Ok(sockets_iterator) = iterate_sockets_info_without_pids(af_flags, proto_flags) else {
-        return Connections { tcp: 0, udp: 0 };
-    };
-
-    let (mut tcp_count, mut udp_count) = (0, 0);
-
-    for info_result in sockets_iterator.flatten() {
-        match info_result.protocol_socket_info {
-            ProtocolSocketInfo::Tcp(_) => tcp_count += 1,
-            ProtocolSocketInfo::Udp(_) => udp_count += 1,
-        }
-    }
+pub async fn realtime_connections() -> Connections {
+    let tcp_v4 = fs::read_to_string("/proc/net/tcp").unwrap_or_default();
+    let tcp_v6 = fs::read_to_string("/proc/net/tcp6").unwrap_or_default();
+    let udp_v4 = fs::read_to_string("/proc/net/udp4").unwrap_or_default();
+    let udp_v6 = fs::read_to_string("/proc/net/udp6").unwrap_or_default();
 
     Connections {
-        tcp: tcp_count,
-        udp: udp_count,
+        tcp: tcp_v4.lines()
+            .chain(tcp_v6.lines())
+            .filter(|line| {
+                line.contains(" 01 ")
+            })
+            .count() as u64,
+        udp: udp_v4.lines()
+            .chain(udp_v6.lines())
+            .filter(|line| {
+                line.contains(" 01 ")
+            })
+            .count() as u64,
     }
 }
 
@@ -319,7 +312,7 @@ pub fn realtime_connections() -> Connections {
     }
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
 pub fn realtime_connections() -> Connections {
     Connections { tcp: 0, udp: 0 }
 }
