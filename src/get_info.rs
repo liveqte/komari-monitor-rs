@@ -266,7 +266,7 @@ pub fn realtime_network(network: &Networks) -> Network {
 }
 
 #[cfg(target_os = "linux")]
-pub async fn realtime_connections() -> Connections {
+pub fn realtime_connections() -> Connections {
     let tcp_v4 = fs::read_to_string("/proc/net/tcp").unwrap_or_default();
     let tcp_v6 = fs::read_to_string("/proc/net/tcp6").unwrap_or_default();
     let udp_v4 = fs::read_to_string("/proc/net/udp4").unwrap_or_default();
