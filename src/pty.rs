@@ -39,14 +39,21 @@ where
         .map_err(|e| format!("无法创建 PTY: {e}"))?;
 
     let cmd_str = cmd.as_str();
-    let cmd = CommandBuilder::new(cmd.clone());
+    let mut cmd = CommandBuilder::new(cmd.clone());
+
+    if !cfg!(windows) {
+        cmd.env("TERM", "xterm-256color");
+        cmd.env("LANG", "C.UTF-8");
+        cmd.env("LC_ALL", "C.UTF-8");
+    }
+
     let mut pty_reader = pair
         .master
         .try_clone_reader()
         .map_err(|e| format!("无法获取 PTY Reader: {e}"))?;
     let pty_writer = Arc::new(Mutex::new(
         pair.master
-            .try_clone_writer()
+            .take_writer()
             .map_err(|e| format!("无法获取 PTY Writer: {e}"))?,
     ));
 
@@ -93,7 +100,6 @@ where
         }
     });
 
-    // 5. WebSocket -> PTY 数据流
     let ws_to_pty_task = tokio::spawn(async move {
         while let Some(result) = ws_receiver.next().await {
             match result {
