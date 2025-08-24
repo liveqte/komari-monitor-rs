@@ -1,17 +1,17 @@
 use crate::data_struct::{Connections, Cpu, Disk, Load, Network, Ram, Swap};
-use miniserde::{Deserialize, Serialize};
-// use netstat2::iterate_sockets_info_without_pids;
-#[cfg(target_os = "windows")] // arm64 windows will face compile error here
+
+#[cfg(target_os = "windows")]
 use raw_cpuid::CpuId;
+
 use std::collections::HashSet;
 use std::fs;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
 use sysinfo::{Disks, Networks, System};
 use tokio::task::JoinHandle;
+use ureq::config::IpFamily;
 
 pub fn arch() -> String {
-    // 直接返回常量，避免to_string()
     std::env::consts::ARCH.to_string()
 }
 
@@ -60,15 +60,13 @@ pub struct IPInfo {
     pub ipv6: Option<Ipv6Addr>,
 }
 
-#[derive(Serialize, Deserialize)]
-struct IpIo {
-    ip: String,
-}
-
 pub async fn ip() -> IPInfo {
     let ipv4: JoinHandle<Option<Ipv4Addr>> = tokio::spawn(async move {
-        let Ok(mut resp) = ureq::get("https://ipinfo.io/")
+        let Ok(mut resp) = ureq::get("https://www.cloudflare.com/cdn-cgi/trace")
             .header("User-Agent", "curl/8.7.1")
+            .config()
+            .ip_family(IpFamily::Ipv4Only)
+            .build()
             .call()
         else {
             return None;
@@ -78,18 +76,24 @@ pub async fn ip() -> IPInfo {
             return None;
         };
 
-        let json: IpIo = if let Ok(json) = miniserde::json::from_str(&body) {
-            json
-        } else {
-            return None;
-        };
+        let mut ip = String::new();
 
-        Ipv4Addr::from_str(&json.ip).ok()
+        for line in body.lines() {
+            if line.starts_with("ip=") {
+                ip = line.replace("ip=", "");
+                break;
+            }
+        }
+
+        Ipv4Addr::from_str(ip.as_str()).ok()
     });
 
     let ipv6: JoinHandle<Option<Ipv6Addr>> = tokio::spawn(async move {
-        let Ok(mut resp) = ureq::get("https://v6.ipinfo.io/")
+        let Ok(mut resp) = ureq::get("https://www.cloudflare.com/cdn-cgi/trace")
             .header("User-Agent", "curl/8.7.1")
+            .config()
+            .ip_family(IpFamily::Ipv6Only)
+            .build()
             .call()
         else {
             return None;
@@ -99,13 +103,16 @@ pub async fn ip() -> IPInfo {
             return None;
         };
 
-        let json: IpIo = if let Ok(json) = miniserde::json::from_str(&body) {
-            json
-        } else {
-            return None;
-        };
+        let mut ip = String::new();
 
-        Ipv6Addr::from_str(&json.ip).ok()
+        for line in body.lines() {
+            if line.starts_with("ip=") {
+                ip = line.replace("ip=", "");
+                break;
+            }
+        }
+
+        Ipv6Addr::from_str(ip.as_str()).ok()
     });
 
     IPInfo {

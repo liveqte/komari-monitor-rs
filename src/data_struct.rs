@@ -33,8 +33,7 @@ impl BasicInfo {
     pub async fn build(sysinfo_sys: &sysinfo::System, fake: f64) -> Self {
         let cpu = cpu_info_without_usage(sysinfo_sys);
         let mem_disk = mem_info_without_usage(sysinfo_sys);
-        let ip = ip().await;
-        let os = os().await;
+        let (ip, os) = tokio::join!(ip(), os());
 
         // 预计算fake值以减少重复计算
         let fake_cpu_cores = (f64::from(cpu.cores) * fake) as u64;
@@ -154,7 +153,6 @@ impl RealTimeInfo {
         disk: &Disks,
         fake: f64,
     ) -> Self {
-        // 预计算fake值以减少重复计算
         let cpu = realtime_cpu(sysinfo_sys);
 
         let ram = realtime_mem(sysinfo_sys);
