@@ -22,6 +22,9 @@ mod ping;
 mod pty;
 mod rustls_config;
 
+#[cfg(target_os = "linux")]
+mod netlink;
+
 #[tokio::main]
 async fn main() {
     let args = Args::par();

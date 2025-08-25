@@ -38,7 +38,8 @@ pub fn mem_info_without_usage(sysinfo_sys: &System) -> MemDiskInfoWithOutUsage {
     let mem_total = sysinfo_sys.total_memory();
     let swap_total = sysinfo_sys.total_swap();
 
-    let disk_list = Disks::new_with_refreshed_list();
+    let disks = Disks::new_with_refreshed_list();
+    let disk_list = filter_disks(&disks);
     let mut all_disk_space: u64 = 0;
     for disk in &disk_list {
         all_disk_space += disk.total_space();
@@ -214,7 +215,8 @@ pub fn realtime_swap(sysinfo_sys: &System) -> Swap {
 
 pub fn realtime_disk(disk: &Disks) -> Disk {
     let mut used_disk: u64 = 0;
-    for disk in disk {
+    let disk_list = filter_disks(disk);
+    for disk in disk_list {
         used_disk += disk.total_space() - disk.available_space();
     }
 
@@ -267,24 +269,18 @@ pub fn realtime_network(network: &Networks) -> Network {
 
 #[cfg(target_os = "linux")]
 pub fn realtime_connections() -> Connections {
-    let tcp_v4 = fs::read_to_string("/proc/net/tcp").unwrap_or_default();
-    let tcp_v6 = fs::read_to_string("/proc/net/tcp6").unwrap_or_default();
-    let udp_v4 = fs::read_to_string("/proc/net/udp4").unwrap_or_default();
-    let udp_v6 = fs::read_to_string("/proc/net/udp6").unwrap_or_default();
-
+    use crate::netlink::connections_count_with_protocol;
+    let tcp4 =
+        connections_count_with_protocol(libc::AF_INET as u8, libc::IPPROTO_TCP as u8).unwrap_or(0);
+    let tcp6 =
+        connections_count_with_protocol(libc::AF_INET6 as u8, libc::IPPROTO_TCP as u8).unwrap_or(0);
+    let udp4 =
+        connections_count_with_protocol(libc::AF_INET as u8, libc::IPPROTO_UDP as u8).unwrap_or(0);
+    let udp6 =
+        connections_count_with_protocol(libc::AF_INET6 as u8, libc::IPPROTO_UDP as u8).unwrap_or(0);
     Connections {
-        tcp: tcp_v4.lines()
-            .chain(tcp_v6.lines())
-            .filter(|line| {
-                line.contains(" 01 ")
-            })
-            .count() as u64,
-        udp: udp_v4.lines()
-            .chain(udp_v6.lines())
-            .filter(|line| {
-                line.contains(" 01 ")
-            })
-            .count() as u64,
+        tcp: tcp4 + tcp6,
+        udp: udp4 + udp6,
     }
 }
 
@@ -338,4 +334,35 @@ pub fn realtime_process() -> u64 {
     }
 
     process_count as u64
+}
+
+pub fn filter_disks(disks: &Disks) -> Vec<&sysinfo::Disk> {
+    let allowed = [
+        "apfs",
+        "ext4",
+        "ext3",
+        "ext2",
+        "f2fs",
+        "reiserfs",
+        "jfs",
+        "btrfs",
+        "fuseblk",
+        "zfs",
+        "simfs",
+        "ntfs",
+        "fat32",
+        "exfat",
+        "xfs",
+        "fuse.rclone",
+    ];
+
+    let filtered: Vec<&sysinfo::Disk> = disks
+        .iter() // 返回 &Disk
+        .filter(|disk| {
+            let fs = disk.file_system().to_string_lossy();
+            allowed.contains(&fs.as_ref())
+        })
+        .collect();
+
+    filtered
 }
