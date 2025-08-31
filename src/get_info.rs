@@ -250,7 +250,16 @@ pub fn realtime_network(network: &Networks) -> Network {
     let mut up = 0;
     let mut down = 0;
 
-    for (_, data) in network {
+    for (name, data) in network {
+        if name.contains("lo")
+            || name.contains("veth")
+            || name.contains("docker")
+            || name.contains("tun")
+            || name.contains("br")
+            || name.contains("tap")
+        {
+            continue;
+        }
         total_up += data.total_transmitted();
         total_down += data.total_received();
         up += data.transmitted();
