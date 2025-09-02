@@ -57,7 +57,7 @@ pub async fn ping_target(utf8_str: &str) -> Result<PingEventCallback, String> {
                 Duration::from_secs(10),
                 TcpStream::connect(&ping_event.ping_target), // 避免克隆
             )
-            .await
+                .await
             {
                 Err(_) => Err("Tcping 超时".to_string()),
                 Ok(Ok(_)) => Ok(()),
@@ -162,7 +162,7 @@ pub fn icmp_ipv4(ip: Ipv4Addr, task_id: u64) -> Result<PingEventCallback, String
             0x69, 0x67, 0x68, 0x74, 0x73, 0x20, 0x6f, 0x66, 0x20, 0x6e, 0x69, 0x20, 0x20, 0x20,
         ],
     )
-    .unwrap();
+        .unwrap();
 
     let send_time = Instant::now();
     if socket4.send_to(ip, packet).is_err() {
@@ -241,7 +241,7 @@ pub fn icmp_ipv6(ip: Ipv6Addr, task_id: u64) -> Result<PingEventCallback, String
             0x69, 0x67, 0x68, 0x74, 0x73, 0x20, 0x6f, 0x66, 0x20, 0x6e, 0x69, 0x20, 0x20, 0x20,
         ],
     )
-    .unwrap();
+        .unwrap();
 
     let send_time = Instant::now();
 

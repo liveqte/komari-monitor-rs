@@ -3,6 +3,7 @@ use crate::rustls_config::create_dangerous_config;
 use clap::Parser;
 use std::sync::Arc;
 use tokio::net::TcpStream;
+use tokio::time::{timeout, Duration};
 use tokio_tungstenite::{
     connect_async, connect_async_tls_with_config, Connector, MaybeTlsStream, WebSocketStream,
 };
@@ -76,26 +77,40 @@ pub async fn connect_ws(
     tls: bool,
     skip_verify: bool,
 ) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, String> {
+    let connection_timeout = Duration::from_secs(10);
+
     if tls {
         if skip_verify {
-            connect_async_tls_with_config(
-                url,
-                None,
-                false,
-                Some(Connector::Rustls(Arc::new(create_dangerous_config()))),
+            timeout(
+                connection_timeout,
+                connect_async_tls_with_config(
+                    url,
+                    None,
+                    false,
+                    Some(Connector::Rustls(Arc::new(create_dangerous_config()))),
+                ),
             )
-            .await
-            .map(|ws| ws.0)
-            .map_err(|_| "无法创立 WebSocket 连接".to_string())
-        } else {
-            connect_async_tls_with_config(url, None, false, None)
                 .await
+                .map_err(|_| "WebSocket 连接超时".to_string())?
+                .map(|ws| ws.0)
+                .map_err(|_| "无法创立 WebSocket 连接".to_string())
+        } else {
+            timeout(
+                connection_timeout,
+                connect_async_tls_with_config(url, None, false, None),
+            )
+                .await
+                .map_err(|_| "WebSocket 连接超时".to_string())?
                 .map(|ws| ws.0)
                 .map_err(|_| "无法创立 WebSocket 连接".into())
         }
     } else {
-        connect_async(url)
+        timeout(
+            connection_timeout,
+            connect_async(url),
+        )
             .await
+            .map_err(|_| "WebSocket 连接超时".to_string())?
             .map(|ws| ws.0)
             .map_err(|_| "无法创立 WebSocket 连接".to_string())
     }
