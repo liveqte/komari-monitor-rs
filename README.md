@@ -14,12 +14,12 @@ Agent
 
 - 交互模式
   ```bash
-  wget -O setup-client-rs.sh "https://ghfast.top/https://raw.githubusercontent.com/GenshinMinecraft/komari-monitor-rs/refs/heads/main/install.sh" && chmod +x setup-client-rs.sh && sudo bash ./setup-client-rs.sh
+  wget -O setup-client-rs.sh "https://ghfast.top/https://raw.githubusercontent.com/GenshinMinecraft/komari-monitor-rs/refs/heads/main/install.sh" && chmod +x setup-client-rs.sh && bash ./setup-client-rs.sh
   ```
 - 直接传入参数
   ```bash
   wget -O setup-client-rs.sh "https://ghfast.top/https://raw.githubusercontent.com/GenshinMinecraft/komari-monitor-rs/refs/heads/main/install.sh" && chmod +x setup-client-rs.sh
-  bash install.sh --http-server "http://your.server:port" --ws-server "ws://your.server:port" --token "your_token"
+  bash setup-client-rs.sh --http-server "http://your.server:port" --ws-server "ws://your.server:port" --token "your_token"
   ```
 
 ## 与原版的差异

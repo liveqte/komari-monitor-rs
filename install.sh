@@ -187,7 +187,7 @@ main() {
     install_dependencies
 
     ARCH_FILE=$(get_arch)
-    DOWNLOAD_URL="https://github.com/${GITHUB_REPO}/releases/download/latest/${ARCH_FILE}"
+    DOWNLOAD_URL="https://ghfast.top/https://github.com/${GITHUB_REPO}/releases/download/latest/${ARCH_FILE}"
 
     log_info "检测到系统架构: $(uname -m)"
     log_info "准备从以下地址下载文件: ${DOWNLOAD_URL}"
