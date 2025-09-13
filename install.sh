@@ -22,7 +22,7 @@ GITHUB_REPO="GenshinMinecraft/komari-monitor-rs"
 # 安装路径
 INSTALL_PATH="/usr/local/bin/komari-monitor-rs"
 # 服务名称
-SERVICE_NAME="komari-monitor"
+SERVICE_NAME="komari-agent-rs"
 # systemd 服务文件路径
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 
