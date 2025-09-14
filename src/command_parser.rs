@@ -64,12 +64,10 @@ impl Args {
             args.terminal_entry = {
                 if cfg!(windows) {
                     "cmd.exe".to_string()
+                } else if fs::exists("/bin/bash").unwrap_or(false) {
+                    "bash".to_string()
                 } else {
-                    if fs::exists("/bin/bash").unwrap_or(false) {
-                        "bash".to_string()
-                    } else {
-                        "sh".to_string()
-                    }
+                    "sh".to_string()
                 }
             };
         }
