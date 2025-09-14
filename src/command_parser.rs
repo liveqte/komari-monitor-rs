@@ -65,7 +65,7 @@ impl Args {
                 if cfg!(windows) {
                     "cmd.exe".to_string()
                 } else {
-                    if fs::exists("/bin/bash") {
+                    if fs::exists("/bin/bash").unwrap_or(false) {
                         "bash".to_string()
                     } else {
                         "sh".to_string()
