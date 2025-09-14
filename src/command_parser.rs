@@ -1,3 +1,4 @@
+use std::fs;
 use crate::get_info::DURATION;
 use crate::rustls_config::create_dangerous_config;
 use clap::Parser;
@@ -64,7 +65,11 @@ impl Args {
                 if cfg!(windows) {
                     "cmd.exe".to_string()
                 } else {
-                    "bash".to_string()
+                    if fs::exists("/bin/bash") {
+                        "bash".to_string()
+                    } else {
+                        "sh".to_string()
+                    }
                 }
             };
         }
