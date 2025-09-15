@@ -1,4 +1,4 @@
-#![warn(clippy::all, clippy::pedantic)]
+// #![warn(clippy::all, clippy::pedantic)]
 
 use crate::command_parser::{connect_ws, Args};
 use crate::data_struct::{BasicInfo, RealTimeInfo};

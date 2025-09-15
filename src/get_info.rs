@@ -1,4 +1,5 @@
 use crate::data_struct::{Connections, Cpu, Disk, Load, Network, Ram, Swap};
+use miniserde::{json, Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs;
 use std::net::{Ipv4Addr, Ipv6Addr};
@@ -22,7 +23,7 @@ pub fn cpu_info_without_usage(sysinfo_sys: &System) -> CPUInfoWithOutUsage {
     for cpu in sysinfo_sys.cpus() {
         hashset.insert(cpu.brand().to_string());
     }
-    let name = hashset.into_iter().collect::<Vec<String>>().join(", ");
+    let name = hashset.into_iter().collect::<Vec<String>>().join(", ").trim().to_string();
 
     CPUInfoWithOutUsage { name, cores }
 }
@@ -59,7 +60,7 @@ pub struct IPInfo {
 
 pub async fn ip() -> IPInfo {
     let ipv4: JoinHandle<Option<Ipv4Addr>> = tokio::spawn(async move {
-        let Ok(mut resp) = ureq::get("https://www.cloudflare.com/cdn-cgi/trace")
+        let Ok(mut resp) = ureq::get("https://www.toutiao.com/stream/widget/local_weather/data/")
             .header("User-Agent", "curl/8.7.1")
             .config()
             .ip_family(IpFamily::Ipv4Only)
@@ -73,20 +74,28 @@ pub async fn ip() -> IPInfo {
             return None;
         };
 
-        let mut ip = String::new();
-
-        for line in body.lines() {
-            if line.starts_with("ip=") {
-                ip = line.replace("ip=", "");
-                break;
-            }
+        #[derive(Serialize, Deserialize)]
+        struct IpJson {
+            data: IpJsonData,
         }
 
-        Ipv4Addr::from_str(ip.as_str()).ok()
+        #[derive(Serialize, Deserialize)]
+        struct IpJsonData {
+            ip: String,
+        }
+
+        let json: IpJson = match json::from_str(&body) {
+            Err(_) => {
+                return None;
+            },
+            Ok(json) => json,
+        };
+
+        Ipv4Addr::from_str(json.data.ip.as_str()).ok()
     });
 
     let ipv6: JoinHandle<Option<Ipv6Addr>> = tokio::spawn(async move {
-        let Ok(mut resp) = ureq::get("https://www.cloudflare.com/cdn-cgi/trace")
+        let Ok(mut resp) = ureq::get("https://api6.ipify.org?format=json")
             .header("User-Agent", "curl/8.7.1")
             .config()
             .ip_family(IpFamily::Ipv6Only)
@@ -100,16 +109,19 @@ pub async fn ip() -> IPInfo {
             return None;
         };
 
-        let mut ip = String::new();
-
-        for line in body.lines() {
-            if line.starts_with("ip=") {
-                ip = line.replace("ip=", "");
-                break;
-            }
+        #[derive(Serialize, Deserialize)]
+        struct IpJson {
+            ip: String,
         }
 
-        Ipv6Addr::from_str(ip.as_str()).ok()
+        let json: IpJson = match json::from_str(&body) {
+            Err(_) => {
+                return None;
+            },
+            Ok(json) => json,
+        };
+
+        Ipv6Addr::from_str(json.ip.as_str()).ok()
     });
 
     IPInfo {
@@ -335,11 +347,10 @@ pub fn realtime_process() -> u64 {
 
     for entry in entries.flatten() {
         let file_name = entry.file_name();
-        if let Some(name_str) = file_name.to_str() {
-            if name_str.parse::<u32>().is_ok() {
+        if let Some(name_str) = file_name.to_str()
+            && name_str.parse::<u32>().is_ok() {
                 process_count += 1;
             }
-        }
     }
 
     process_count as u64
