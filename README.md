@@ -72,6 +72,8 @@ Options:
           设置主端 WebSocket 地址
   -t, --token <TOKEN>
           设置 Token
+      --ip-provider <IP_PROVIDER>
+          公网 IP 接口 [default: ipinfo] [possible values: cloudflare, ipinfo]
       --terminal
           启用 Terminal (默认关闭)
       --terminal-entry <TERMINAL_ENTRY>

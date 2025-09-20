@@ -1,5 +1,5 @@
 use crate::data_struct::{Connections, Cpu, Disk, Load, Network, Ram, Swap};
-use miniserde::{json, Deserialize, Serialize};
+use miniserde::{Deserialize, Serialize, json};
 use std::collections::HashSet;
 use std::fs;
 use std::net::{Ipv4Addr, Ipv6Addr};
@@ -8,6 +8,7 @@ use std::time::Duration;
 use sysinfo::{Disks, Networks, System};
 use tokio::task::JoinHandle;
 use ureq::config::IpFamily;
+use crate::command_parser::IpProvider;
 
 pub fn arch() -> String {
     std::env::consts::ARCH.to_string()
@@ -24,7 +25,12 @@ pub fn cpu_info_without_usage(sysinfo_sys: &System) -> CPUInfoWithOutUsage {
     for cpu in sysinfo_sys.cpus() {
         hashset.insert(cpu.brand().to_string());
     }
-    let name = hashset.into_iter().collect::<Vec<String>>().join(", ").trim().to_string();
+    let name = hashset
+        .into_iter()
+        .collect::<Vec<String>>()
+        .join(", ")
+        .trim()
+        .to_string();
 
     CPUInfoWithOutUsage { name, cores }
 }
@@ -54,12 +60,19 @@ pub fn mem_info_without_usage(sysinfo_sys: &System) -> MemDiskInfoWithOutUsage {
     }
 }
 
+pub async fn ip(provider: &IpProvider) -> IPInfo {
+    match provider {
+        IpProvider::Cloudflare => ip_cloudflare().await,
+        IpProvider::Ipinfo => ip_ipinfo().await,
+    }
+}
+
 pub struct IPInfo {
     pub ipv4: Option<Ipv4Addr>,
     pub ipv6: Option<Ipv6Addr>,
 }
 
-pub async fn ip() -> IPInfo {
+pub async fn ip_ipinfo() -> IPInfo {
     let ipv4: JoinHandle<Option<Ipv4Addr>> = tokio::spawn(async move {
         let Ok(mut resp) = ureq::get("https://ipinfo.io")
             .header("User-Agent", "curl/8.7.1")
@@ -84,7 +97,7 @@ pub async fn ip() -> IPInfo {
         let json: IpJson = match json::from_str(&body) {
             Err(_) => {
                 return None;
-            },
+            }
             Ok(json) => json,
         };
 
@@ -115,11 +128,72 @@ pub async fn ip() -> IPInfo {
         let json: IpJson = match json::from_str(&body) {
             Err(_) => {
                 return None;
-            },
+            }
             Ok(json) => json,
         };
 
         Ipv6Addr::from_str(json.ip.as_str()).ok()
+    });
+
+    IPInfo {
+        ipv4: ipv4.await.unwrap(),
+        ipv6: ipv6.await.unwrap(),
+    }
+}
+
+pub async fn ip_cloudflare() -> IPInfo {
+    let ipv4: JoinHandle<Option<Ipv4Addr>> = tokio::spawn(async move {
+        let Ok(mut resp) = ureq::get("https://www.cloudflare.com/cdn-cgi/trace")
+            .header("User-Agent", "curl/8.7.1")
+            .config()
+            .ip_family(IpFamily::Ipv4Only)
+            .build()
+            .call()
+        else {
+            return None;
+        };
+
+        let Ok(body) = resp.body_mut().read_to_string() else {
+            return None;
+        };
+
+        let mut ip = String::new();
+
+        for line in body.lines() {
+            if line.starts_with("ip=") {
+                ip = line.replace("ip=", "");
+                break;
+            }
+        }
+
+        Ipv4Addr::from_str(ip.as_str()).ok()
+    });
+
+    let ipv6: JoinHandle<Option<Ipv6Addr>> = tokio::spawn(async move {
+        let Ok(mut resp) = ureq::get("https://www.cloudflare.com/cdn-cgi/trace")
+            .header("User-Agent", "curl/8.7.1")
+            .config()
+            .ip_family(IpFamily::Ipv6Only)
+            .build()
+            .call()
+        else {
+            return None;
+        };
+
+        let Ok(body) = resp.body_mut().read_to_string() else {
+            return None;
+        };
+
+        let mut ip = String::new();
+
+        for line in body.lines() {
+            if line.starts_with("ip=") {
+                ip = line.replace("ip=", "");
+                break;
+            }
+        }
+
+        Ipv6Addr::from_str(ip.as_str()).ok()
     });
 
     IPInfo {
@@ -305,7 +379,7 @@ pub fn realtime_connections() -> Connections {
 
 #[cfg(target_os = "windows")]
 pub fn realtime_connections() -> Connections {
-    use netstat2::{iterate_sockets_info_without_pids, ProtocolFlags, ProtocolSocketInfo};
+    use netstat2::{ProtocolFlags, ProtocolSocketInfo, iterate_sockets_info_without_pids};
     let proto_flags = ProtocolFlags::TCP | ProtocolFlags::UDP;
 
     let Ok(sockets_iterator) = iterate_sockets_info_without_pids(proto_flags) else {
@@ -346,9 +420,10 @@ pub fn realtime_process() -> u64 {
     for entry in entries.flatten() {
         let file_name = entry.file_name();
         if let Some(name_str) = file_name.to_str()
-            && name_str.parse::<u32>().is_ok() {
-                process_count += 1;
-            }
+            && name_str.parse::<u32>().is_ok()
+        {
+            process_count += 1;
+        }
     }
 
     process_count as u64

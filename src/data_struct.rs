@@ -8,6 +8,7 @@ use crate::{
 };
 use miniserde::{Deserialize, Serialize};
 use sysinfo::{Disks, Networks};
+use crate::command_parser::IpProvider;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BasicInfo {
@@ -30,12 +31,11 @@ pub struct BasicInfo {
 }
 
 impl BasicInfo {
-    pub async fn build(sysinfo_sys: &sysinfo::System, fake: f64) -> Self {
+    pub async fn build(sysinfo_sys: &sysinfo::System, fake: f64, ip_provider: &IpProvider) -> Self {
         let cpu = cpu_info_without_usage(sysinfo_sys);
         let mem_disk = mem_info_without_usage(sysinfo_sys);
-        let (ip, os) = tokio::join!(ip(), os());
+        let (ip, os) = tokio::join!(ip(ip_provider), os());
 
-        // 预计算fake值以减少重复计算
         let fake_cpu_cores = (f64::from(cpu.cores) * fake) as u64;
         let fake_disk_total = (mem_disk.disk_total as f64 * fake) as u64;
         let fake_swap_total = (mem_disk.swap_total as f64 * fake) as u64;
@@ -59,18 +59,12 @@ impl BasicInfo {
     }
 
     pub async fn push(
-        sysinfo_sys: &sysinfo::System,
+        &self,
         basic_info_url: &str,
-        fake: f64,
         ignore_unsafe_cert: bool,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let basic_info = Self::build(sysinfo_sys, fake).await;
-        println!("{basic_info:?}");
-
-        let json_string = miniserde::json::to_string(&basic_info);
-
         let agent = create_ureq_agent(ignore_unsafe_cert);
-
+        let json_string = miniserde::json::to_string(self);
         let resp = agent
             .post(basic_info_url)
             .header("User-Agent", "curl/11.45.14-rs")

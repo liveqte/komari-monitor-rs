@@ -1,12 +1,13 @@
-use std::fs;
+use std::fmt::{Display, Formatter};
 use crate::get_info::DURATION;
 use crate::rustls_config::create_dangerous_config;
-use clap::Parser;
+use clap::{Parser, ValueEnum};
+use std::fs;
 use std::sync::Arc;
 use tokio::net::TcpStream;
-use tokio::time::{timeout, Duration};
+use tokio::time::{Duration, timeout};
 use tokio_tungstenite::{
-    connect_async, connect_async_tls_with_config, Connector, MaybeTlsStream, WebSocketStream,
+    Connector, MaybeTlsStream, WebSocketStream, connect_async, connect_async_tls_with_config,
 };
 
 /// Komari Monitor Agent
@@ -24,6 +25,10 @@ pub struct Args {
     /// 设置 Token
     #[arg(short, long)]
     pub token: String,
+
+    /// 公网 IP 接口
+    #[arg(long, default_value_t=ip_provider())]
+    pub ip_provider: IpProvider,
 
     /// 启用 Terminal (默认关闭)
     #[arg(long, default_value_t = false)]
@@ -52,6 +57,25 @@ pub struct Args {
 
 fn terminal_entry() -> String {
     "default".to_string()
+}
+
+fn ip_provider() -> IpProvider {
+    IpProvider::Ipinfo
+}
+
+#[derive(Parser, Debug, Clone, ValueEnum)]
+pub enum IpProvider {
+    Cloudflare,
+    Ipinfo,
+}
+
+impl Display for IpProvider {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            IpProvider::Cloudflare => write!(f, "cloudflare"),
+            IpProvider::Ipinfo => write!(f, "ipinfo"),
+        }
+    }
 }
 
 impl Args {
@@ -93,25 +117,22 @@ pub async fn connect_ws(
                     Some(Connector::Rustls(Arc::new(create_dangerous_config()))),
                 ),
             )
-                .await
-                .map_err(|_| "WebSocket 连接超时".to_string())?
-                .map(|ws| ws.0)
-                .map_err(|_| "无法创立 WebSocket 连接".to_string())
+            .await
+            .map_err(|_| "WebSocket 连接超时".to_string())?
+            .map(|ws| ws.0)
+            .map_err(|_| "无法创立 WebSocket 连接".to_string())
         } else {
             timeout(
                 connection_timeout,
                 connect_async_tls_with_config(url, None, false, None),
             )
-                .await
-                .map_err(|_| "WebSocket 连接超时".to_string())?
-                .map(|ws| ws.0)
-                .map_err(|_| "无法创立 WebSocket 连接".into())
+            .await
+            .map_err(|_| "WebSocket 连接超时".to_string())?
+            .map(|ws| ws.0)
+            .map_err(|_| "无法创立 WebSocket 连接".into())
         }
     } else {
-        timeout(
-            connection_timeout,
-            connect_async(url),
-        )
+        timeout(connection_timeout, connect_async(url))
             .await
             .map_err(|_| "WebSocket 连接超时".to_string())?
             .map(|ws| ws.0)
