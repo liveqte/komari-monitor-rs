@@ -60,7 +60,7 @@ pub struct IPInfo {
 
 pub async fn ip() -> IPInfo {
     let ipv4: JoinHandle<Option<Ipv4Addr>> = tokio::spawn(async move {
-        let Ok(mut resp) = ureq::get("https://www.toutiao.com/stream/widget/local_weather/data/")
+        let Ok(mut resp) = ureq::get("https://ipinfo.io")
             .header("User-Agent", "curl/8.7.1")
             .config()
             .ip_family(IpFamily::Ipv4Only)
@@ -76,11 +76,6 @@ pub async fn ip() -> IPInfo {
 
         #[derive(Serialize, Deserialize)]
         struct IpJson {
-            data: IpJsonData,
-        }
-
-        #[derive(Serialize, Deserialize)]
-        struct IpJsonData {
             ip: String,
         }
 
@@ -91,11 +86,11 @@ pub async fn ip() -> IPInfo {
             Ok(json) => json,
         };
 
-        Ipv4Addr::from_str(json.data.ip.as_str()).ok()
+        Ipv4Addr::from_str(json.ip.as_str()).ok()
     });
 
     let ipv6: JoinHandle<Option<Ipv6Addr>> = tokio::spawn(async move {
-        let Ok(mut resp) = ureq::get("https://api6.ipify.org?format=json")
+        let Ok(mut resp) = ureq::get("https://6.ipinfo.io")
             .header("User-Agent", "curl/8.7.1")
             .config()
             .ip_family(IpFamily::Ipv6Only)
