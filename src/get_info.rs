@@ -4,6 +4,7 @@ use std::collections::HashSet;
 use std::fs;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
+use std::time::Duration;
 use sysinfo::{Disks, Networks, System};
 use tokio::task::JoinHandle;
 use ureq::config::IpFamily;
@@ -63,6 +64,7 @@ pub async fn ip() -> IPInfo {
         let Ok(mut resp) = ureq::get("https://ipinfo.io")
             .header("User-Agent", "curl/8.7.1")
             .config()
+            .timeout_global(Some(Duration::from_secs(5)))
             .ip_family(IpFamily::Ipv4Only)
             .build()
             .call()
@@ -93,6 +95,7 @@ pub async fn ip() -> IPInfo {
         let Ok(mut resp) = ureq::get("https://6.ipinfo.io")
             .header("User-Agent", "curl/8.7.1")
             .config()
+            .timeout_global(Some(Duration::from_secs(5)))
             .ip_family(IpFamily::Ipv6Only)
             .build()
             .call()

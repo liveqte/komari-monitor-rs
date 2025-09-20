@@ -1,6 +1,6 @@
 [package]
 name = "komari-monitor-rs"
-version = "0.1.10"
+version = "0.1.11"
 edition = "2024"
 authors = ["GenshinMinecrat <gm@highp.ing>"]
 description = "Komari Monitor Agent in Rust"
@@ -9,15 +9,15 @@ license = "WTFPL"
 
 [dependencies]
 tokio = { version = "1.47.1", default-features = false, features = ["rt-multi-thread", "macros", "time", "process", "sync", "net", "fs"] }
-rustls = { version = "0.23.31", default-features = false, features = ["ring"] }
+rustls = { version = "0.23.32", default-features = false, features = ["ring"] }
 rustls-pki-types = "1.12.0"
 futures = { version = "0.3.31", default-features = false, features = ["std"] }
 miniserde = { version = "0.1.42", default-features = false, features = ["std"] }
 tokio-tungstenite = { version = "0.27.0", default-features = false, features = ["rustls-tls-webpki-roots", "connect"] }
-ureq = { version = "3.1.0", default-features = false, features = ["gzip", "rustls"] }
-clap = { version = "4.5.45", default-features = false, features = ["std", "derive", "usage", "help"] }
+ureq = { version = "3.1.2", default-features = false, features = ["gzip", "rustls"] }
+clap = { version = "4.5.48", default-features = false, features = ["std", "derive", "usage", "help"] }
 sysinfo = { version = "0.37.0", default-features = false, features = ["disk", "system", "multithread", "network"] }
-time = { version = "0.3.41", default-features = false, features = ["local-offset", "formatting"] }
+time = { version = "0.3.44", default-features = false, features = ["local-offset", "formatting"] }
 icmp-socket = "0.2.0"
 portable-pty = "0.9.0"
 
