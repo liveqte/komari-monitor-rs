@@ -2,9 +2,6 @@
 
 use crate::command_parser::{Args, LogLevel};
 use crate::data_struct::{BasicInfo, RealTimeInfo};
-use crate::exec::exec_command;
-use crate::ping::ping_target;
-use crate::pty::{get_pty_ws_link, handle_pty_session};
 use crate::utils::{build_urls, connect_ws, init_logger};
 use futures::{SinkExt, StreamExt};
 use log::{info, Level};
@@ -18,19 +15,17 @@ use tokio::sync::Mutex;
 use tokio::time::sleep;
 use tokio_tungstenite::tungstenite::{Message, Utf8Bytes};
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
+use crate::callbacks::handle_callbacks;
 
 mod command_parser;
 mod data_struct;
-mod exec;
-mod get_info;
-mod ping;
-mod pty;
 mod rustls_config;
 
 #[cfg(target_os = "linux")]
 mod netlink;
 mod utils;
 mod callbacks;
+mod get_info;
 
 #[tokio::main]
 async fn main() {
@@ -43,7 +38,7 @@ async fn main() {
     info!("成功读取参数: {args:?}");
 
     loop {
-        let Ok(ws_stream) = connect_ws(&real_time_url, args.tls, args.ignore_unsafe_cert).await
+        let Ok(ws_stream) = connect_ws(&connection_urls.real_time_url, args.tls, args.ignore_unsafe_cert).await
         else {
             eprintln!("无法连接到 Websocket 服务器，5 秒后重新尝试");
             sleep(Duration::from_secs(5)).await;
@@ -52,16 +47,13 @@ async fn main() {
 
         let (write, mut read): (SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>, SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>) = ws_stream.split();
 
+
         let locked_write: Arc<Mutex<SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>>> = Arc::new(Mutex::new(write));
 
-        let _listener = tokio::spawn({
-            let exec_callback_url = exec_callback_url.clone();
-            let locked_write = locked_write.clone();
-            let args = args.clone();
-            async move {
-
-            }
-        });
+        // Handle callbacks
+        {
+            let _listener = tokio::spawn(handle_callbacks(&args, &connection_urls, &mut read, &locked_write));
+        }
 
         let mut sysinfo_sys = sysinfo::System::new();
         let mut networks = Networks::new_with_refreshed_list();
@@ -74,16 +66,10 @@ async fn main() {
         sysinfo_sys.refresh_memory_specifics(MemoryRefreshKind::everything());
 
         let basic_info = BasicInfo::build(&sysinfo_sys, args.fake, &args.ip_provider).await;
-        println!("{basic_info:?}");
 
-        if let Err(e) = basic_info
-            .push(&basic_info_url, args.ignore_unsafe_cert)
-            .await
-        {
-            eprintln!("推送 Basic Info 时发生错误: {e}");
-        } else {
-            println!("推送 Basic Info 成功");
-        }
+        basic_info
+            .push(&connection_urls.basic_info_url, args.ignore_unsafe_cert)
+            .await;
 
         loop {
             let start_time = tokio::time::Instant::now();

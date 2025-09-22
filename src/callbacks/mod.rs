@@ -44,15 +44,21 @@ pub async fn handle_callbacks(args: &Args, connection_urls: &ConnectionUrls, rea
 
         match json.message.as_str() {
             "exec" => {
-                tokio::spawn(async move {
-                    if let Err(e) = exec_command(
-                        &utf8_cloned,
-                        &connection_urls.exec_callback_url,
-                        &args.ignore_unsafe_cert,
-                    )
-                        .await
-                    {
-                        eprintln!("Exec Error: {e}");
+                tokio::spawn({
+                    let utf8_cloned_for_exec = utf8_cloned.clone();
+                    let exec_callback_url = connection_urls.exec_callback_url.clone();
+                    let ignore_unsafe_cert = args.ignore_unsafe_cert.clone();
+
+                    async move {
+                        if let Err(e) = exec_command(
+                            &utf8_cloned_for_exec,
+                            &exec_callback_url,
+                            &ignore_unsafe_cert,
+                        )
+                            .await
+                        {
+                            error!("Exec Error: {e}");
+                        }
                     }
                 });
             }
@@ -84,10 +90,14 @@ pub async fn handle_callbacks(args: &Args, connection_urls: &ConnectionUrls, rea
 
             "terminal" => {
                 if args.terminal {
+                    let ws_url_base = connection_urls.clone().ws_url_base.clone();
+                    let args = args.clone();
+                    let utf8_cloned = utf8_cloned.clone();
+
                     tokio::spawn(async move {
                         let ws_url = match get_pty_ws_link(
                             &utf8_cloned,
-                            &connection_urls.ws_url_base,
+                            &ws_url_base,
                             &args.token,
                         ) {
                             Ok(ws_url) => ws_url,
@@ -121,7 +131,7 @@ pub async fn handle_callbacks(args: &Args, connection_urls: &ConnectionUrls, rea
                         }
                     });
                 } else {
-                    eprintln!("终端功能未启用");
+                    error!("终端功能未启用");
                 }
             }
             _ => {}
