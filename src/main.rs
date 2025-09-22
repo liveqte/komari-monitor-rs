@@ -1,31 +1,31 @@
 // #![warn(clippy::all, clippy::pedantic)]
 
+use crate::callbacks::handle_callbacks;
 use crate::command_parser::{Args, LogLevel};
 use crate::data_struct::{BasicInfo, RealTimeInfo};
 use crate::utils::{build_urls, connect_ws, init_logger};
+use futures::stream::{SplitSink, SplitStream};
 use futures::{SinkExt, StreamExt};
-use log::{info, Level};
+use log::{Level, info, error};
 use miniserde::{Deserialize, Serialize, json};
 use std::sync::Arc;
 use std::time::Duration;
-use futures::stream::{SplitSink, SplitStream};
 use sysinfo::{CpuRefreshKind, DiskRefreshKind, Disks, MemoryRefreshKind, Networks, RefreshKind};
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
 use tokio::time::sleep;
 use tokio_tungstenite::tungstenite::{Message, Utf8Bytes};
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
-use crate::callbacks::handle_callbacks;
 
 mod command_parser;
 mod data_struct;
 mod rustls_config;
 
+mod callbacks;
+mod get_info;
 #[cfg(target_os = "linux")]
 mod netlink;
 mod utils;
-mod callbacks;
-mod get_info;
 
 #[tokio::main]
 async fn main() {
@@ -38,21 +38,41 @@ async fn main() {
     info!("成功读取参数: {args:?}");
 
     loop {
-        let Ok(ws_stream) = connect_ws(&connection_urls.real_time_url, args.tls, args.ignore_unsafe_cert).await
+        let Ok(ws_stream) = connect_ws(
+            &connection_urls.real_time_url,
+            args.tls,
+            args.ignore_unsafe_cert,
+        )
+        .await
         else {
             eprintln!("无法连接到 Websocket 服务器，5 秒后重新尝试");
             sleep(Duration::from_secs(5)).await;
             continue;
         };
 
-        let (write, mut read): (SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>, SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>) = ws_stream.split();
+        let (write, mut read): (
+            SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
+            SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
+        ) = ws_stream.split();
 
-
-        let locked_write: Arc<Mutex<SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>>> = Arc::new(Mutex::new(write));
+        let locked_write: Arc<
+            Mutex<SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>>,
+        > = Arc::new(Mutex::new(write));
 
         // Handle callbacks
         {
-            let _listener = tokio::spawn(handle_callbacks(&args, &connection_urls, &mut read, &locked_write));
+            let args_cloned = args.clone();
+            let connection_urls_cloned = connection_urls.clone();
+            let locked_write_cloned = locked_write.clone();
+            let _listener = tokio::spawn(async move {
+                handle_callbacks(
+                    &args_cloned,
+                    &connection_urls_cloned,
+                    &mut read,
+                    &locked_write_cloned,
+                )
+                .await
+            });
         }
 
         let mut sysinfo_sys = sysinfo::System::new();
@@ -86,7 +106,7 @@ async fn main() {
             {
                 let mut write = locked_write.lock().await;
                 if let Err(e) = write.send(Message::Text(Utf8Bytes::from(json))).await {
-                    eprintln!("推送 RealTime 时发生错误，尝试重新连接: {e}");
+                    error!("推送 RealTime 时发生错误，尝试重新连接: {e}");
                     break;
                 }
             }

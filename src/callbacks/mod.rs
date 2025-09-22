@@ -1,17 +1,17 @@
-use std::sync::Arc;
-use futures::{SinkExt, StreamExt};
-use futures::stream::{SplitSink, SplitStream};
-use log::{error, info};
-use miniserde::{json, Deserialize, Serialize};
-use tokio::net::TcpStream;
-use tokio::sync::Mutex;
-use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
-use tokio_tungstenite::tungstenite::{Message, Utf8Bytes};
 use crate::callbacks::exec::exec_command;
 use crate::callbacks::ping::ping_target;
 use crate::callbacks::pty::{get_pty_ws_link, handle_pty_session};
 use crate::command_parser::Args;
-use crate::utils::{connect_ws, ConnectionUrls};
+use crate::utils::{ConnectionUrls, connect_ws};
+use futures::stream::{SplitSink, SplitStream};
+use futures::{SinkExt, StreamExt};
+use log::{error, info};
+use miniserde::{Deserialize, Serialize, json};
+use std::sync::Arc;
+use tokio::net::TcpStream;
+use tokio::sync::Mutex;
+use tokio_tungstenite::tungstenite::{Message, Utf8Bytes};
+use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
 pub mod exec;
 pub mod ping;
@@ -22,7 +22,12 @@ struct Msg {
     message: String,
 }
 
-pub async fn handle_callbacks(args: &Args, connection_urls: &ConnectionUrls, reader: &mut SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>, locked_writer: &Arc<Mutex<SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>>>) -> () {
+pub async fn handle_callbacks(
+    args: &Args,
+    connection_urls: &ConnectionUrls,
+    reader: &mut SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
+    locked_writer: &Arc<Mutex<SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>>>,
+) -> () {
     while let Some(msg) = reader.next().await {
         let Ok(msg) = msg else {
             continue;
@@ -55,7 +60,7 @@ pub async fn handle_callbacks(args: &Args, connection_urls: &ConnectionUrls, rea
                             &exec_callback_url,
                             &ignore_unsafe_cert,
                         )
-                            .await
+                        .await
                         {
                             error!("Exec Error: {e}");
                         }
@@ -71,14 +76,10 @@ pub async fn handle_callbacks(args: &Args, connection_urls: &ConnectionUrls, rea
                             let mut write = locked_write_for_ping.lock().await;
                             info!("Ping Success: {}", json::to_string(&json_res));
                             if let Err(e) = write
-                                .send(Message::Text(Utf8Bytes::from(json::to_string(
-                                    &json_res,
-                                ))))
+                                .send(Message::Text(Utf8Bytes::from(json::to_string(&json_res))))
                                 .await
                             {
-                                error!(
-                                    "推送 ping result 时发生错误，尝试重新连接: {e}"
-                                );
+                                error!("推送 ping result 时发生错误，尝试重新连接: {e}");
                             }
                         }
                         Err(err) => {
@@ -95,11 +96,8 @@ pub async fn handle_callbacks(args: &Args, connection_urls: &ConnectionUrls, rea
                     let utf8_cloned = utf8_cloned.clone();
 
                     tokio::spawn(async move {
-                        let ws_url = match get_pty_ws_link(
-                            &utf8_cloned,
-                            &ws_url_base,
-                            &args.token,
-                        ) {
+                        let ws_url = match get_pty_ws_link(&utf8_cloned, &ws_url_base, &args.token)
+                        {
                             Ok(ws_url) => ws_url,
                             Err(e) => {
                                 error!("无法获取 PTY Websocket URL: {e}");
@@ -107,26 +105,16 @@ pub async fn handle_callbacks(args: &Args, connection_urls: &ConnectionUrls, rea
                             }
                         };
 
-                        let ws_stream = match connect_ws(
-                            &ws_url,
-                            args.tls,
-                            args.ignore_unsafe_cert,
-                        )
-                            .await
-                        {
-                            Ok(ws_stream) => ws_stream,
-                            Err(e) => {
-                                error!("无法连接到 PTY Websocket: {e}");
-                                return;
-                            }
-                        };
+                        let ws_stream =
+                            match connect_ws(&ws_url, args.tls, args.ignore_unsafe_cert).await {
+                                Ok(ws_stream) => ws_stream,
+                                Err(e) => {
+                                    error!("无法连接到 PTY Websocket: {e}");
+                                    return;
+                                }
+                            };
 
-                        if let Err(e) = handle_pty_session(
-                            ws_stream,
-                            &args.terminal_entry,
-                        )
-                            .await
-                        {
+                        if let Err(e) = handle_pty_session(ws_stream, &args.terminal_entry).await {
                             error!("PTY Websocket 处理错误: {e}");
                         }
                     });

@@ -1,12 +1,12 @@
 use crate::command_parser::IpProvider;
 use crate::data_struct::{Connections, Cpu, Disk, Load, Network, Ram, Swap};
+use log::{debug, trace};
 use miniserde::{Deserialize, Serialize, json};
 use std::collections::HashSet;
 use std::fs;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
 use std::time::Duration;
-use log::{debug, trace};
 use sysinfo::{Disks, Networks, System};
 use tokio::task::JoinHandle;
 use ureq::config::IpFamily;
@@ -37,7 +37,7 @@ pub fn cpu_info_without_usage(sysinfo_sys: &System) -> CPUInfoWithOutUsage {
         .to_string();
 
     let cpu_info = CPUInfoWithOutUsage { name, cores };
-    
+
     trace!("CPU INFO WITH OUT USAGE 获取成功: {:?}", cpu_info);
 
     cpu_info
@@ -66,9 +66,9 @@ pub fn mem_info_without_usage(sysinfo_sys: &System) -> MemDiskInfoWithOutUsage {
         swap_total,
         disk_total: all_disk_space,
     };
-    
+
     trace!("MEM DISK INFO WITH OUT USAGE 获取成功: {:?}", info);
-    
+
     info
 }
 
@@ -152,9 +152,9 @@ pub async fn ip_ipinfo() -> IPInfo {
         ipv4: ipv4.await.unwrap(),
         ipv6: ipv6.await.unwrap(),
     };
-    
+
     trace!("IP INFO (ipinfo) 获取成功: {:?}", ip_info);
-    
+
     ip_info
 }
 
@@ -217,9 +217,9 @@ pub async fn ip_cloudflare() -> IPInfo {
         ipv4: ipv4.await.unwrap(),
         ipv6: ipv6.await.unwrap(),
     };
-    
+
     trace!("IP INFO (cloudflare) 获取成功: {:?}", ip_info);
-    
+
     ip_info
 }
 
@@ -294,9 +294,9 @@ pub async fn os() -> OsInfo {
         version: kernel_version,
         virtualization: virt,
     };
-    
+
     trace!("OS INFO 获取成功: {:?}", os_info);
-    
+
     os_info
 }
 

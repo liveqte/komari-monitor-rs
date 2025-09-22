@@ -1,4 +1,3 @@
-use log::{debug, error, info};
 use crate::command_parser::IpProvider;
 use crate::{
     get_info::{
@@ -8,6 +7,7 @@ use crate::{
     },
     rustls_config::create_ureq_agent,
 };
+use log::{debug, error, info};
 use miniserde::{Deserialize, Serialize};
 use sysinfo::{Disks, Networks};
 
@@ -57,24 +57,20 @@ impl BasicInfo {
             kernel_version: os.version,
             virtualization: os.virtualization,
         };
-        
+
         debug!("Basic Info 获取成功: {:?}", basic_info);
-        
+
         basic_info
     }
 
-    pub async fn push(
-        &self,
-        basic_info_url: &str,
-        ignore_unsafe_cert: bool,
-    ) -> () {
+    pub async fn push(&self, basic_info_url: &str, ignore_unsafe_cert: bool) -> () {
         let agent = create_ureq_agent(ignore_unsafe_cert);
         let json_string = miniserde::json::to_string(self);
         let resp = agent
             .post(basic_info_url)
             .header("User-Agent", "curl/11.45.14-rs")
             .send(&json_string);
-        
+
         let resp = match resp {
             Ok(resp) => resp,
             Err(e) => {
@@ -217,9 +213,9 @@ impl RealTimeInfo {
             process: fake_process,
             message: String::new(),
         };
-        
+
         debug!("实时信息获取成功: {:?}", realtime_info);
-        
+
         realtime_info
     }
 }

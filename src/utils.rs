@@ -1,12 +1,14 @@
-use std::sync::Arc;
-use std::time::Duration;
-use log::{info, Level};
-use tokio::net::TcpStream;
-use tokio::time::timeout;
-use tokio_tungstenite::{connect_async, connect_async_tls_with_config, Connector, MaybeTlsStream, WebSocketStream};
-use url::ParseError;
 use crate::command_parser::LogLevel;
 use crate::rustls_config::create_dangerous_config;
+use log::{Level, info};
+use std::sync::Arc;
+use std::time::Duration;
+use tokio::net::TcpStream;
+use tokio::time::timeout;
+use tokio_tungstenite::{
+    Connector, MaybeTlsStream, WebSocketStream, connect_async, connect_async_tls_with_config,
+};
+use url::ParseError;
 
 pub fn init_logger(log_level: &LogLevel) {
     if cfg!(target_os = "windows") {
@@ -22,8 +24,7 @@ pub fn init_logger(log_level: &LogLevel) {
     }
 }
 
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ConnectionUrls {
     pub http_url_base: String,
     pub ws_url_base: String,
@@ -32,8 +33,11 @@ pub struct ConnectionUrls {
     pub exec_callback_url: String,
 }
 
-
-pub fn build_urls(http_server: &str, ws_server: &Option<String>, token: &str) -> Result<ConnectionUrls, ParseError> {
+pub fn build_urls(
+    http_server: &str,
+    ws_server: &Option<String>,
+    token: &str,
+) -> Result<ConnectionUrls, ParseError> {
     fn get_port(url: &url::Url) -> String {
         if let Some(port) = url.port() {
             port.to_string()
@@ -60,7 +64,7 @@ pub fn build_urls(http_server: &str, ws_server: &Option<String>, token: &str) ->
         let port = get_port(&source_http_url);
         url::Url::parse(format!("{}://{}:{}", scheme, host, port).as_str())?
     };
-    
+
     let http_url_base = {
         let scheme = source_http_url.scheme();
         let host = source_http_url.host().ok_or(ParseError::EmptyHost)?;
@@ -80,10 +84,7 @@ pub fn build_urls(http_server: &str, ws_server: &Option<String>, token: &str) ->
         http_url_base, token
     );
     let real_time_url = format!("{}/api/clients/report?token={}", ws_url_base, token);
-    let exec_callback_url = format!(
-        "{}/api/clients/task/result?token={}",
-        http_url_base, token
-    );
+    let exec_callback_url = format!("{}/api/clients/task/result?token={}", http_url_base, token);
 
     let connection_urls = ConnectionUrls {
         http_url_base,
@@ -116,19 +117,19 @@ pub async fn connect_ws(
                     Some(Connector::Rustls(Arc::new(create_dangerous_config()))),
                 ),
             )
-                .await
-                .map_err(|_| "WebSocket 连接超时".to_string())?
-                .map(|ws| ws.0)
-                .map_err(|_| "无法创立 WebSocket 连接".to_string())
+            .await
+            .map_err(|_| "WebSocket 连接超时".to_string())?
+            .map(|ws| ws.0)
+            .map_err(|_| "无法创立 WebSocket 连接".to_string())
         } else {
             timeout(
                 connection_timeout,
                 connect_async_tls_with_config(url, None, false, None),
             )
-                .await
-                .map_err(|_| "WebSocket 连接超时".to_string())?
-                .map(|ws| ws.0)
-                .map_err(|_| "无法创立 WebSocket 连接".into())
+            .await
+            .map_err(|_| "WebSocket 连接超时".to_string())?
+            .map(|ws| ws.0)
+            .map_err(|_| "无法创立 WebSocket 连接".into())
         }
     } else {
         timeout(connection_timeout, connect_async(url))
