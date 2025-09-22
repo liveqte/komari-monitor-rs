@@ -1,6 +1,12 @@
-use log::Level;
+use std::sync::Arc;
+use std::time::Duration;
+use log::{info, Level};
+use tokio::net::TcpStream;
+use tokio::time::timeout;
+use tokio_tungstenite::{connect_async, connect_async_tls_with_config, Connector, MaybeTlsStream, WebSocketStream};
 use url::ParseError;
 use crate::command_parser::LogLevel;
+use crate::rustls_config::create_dangerous_config;
 
 pub fn init_logger(log_level: &LogLevel) {
     if cfg!(target_os = "windows") {
@@ -16,7 +22,19 @@ pub fn init_logger(log_level: &LogLevel) {
     }
 }
 
-pub fn build_urls(http_server: String, ws_server: Option<String>, token: String) -> Result<(String, String, String), ParseError> {
+pub fn build_urls(http_server: &str, ws_server: &Option<String>, token: &str) -> Result<(String, String, String), ParseError> {
+    fn get_port(url: &url::Url) -> String {
+        if let Some(port) = url.port() {
+            port.to_string()
+        } else {
+            if url.scheme() == "https" || url.scheme() == "wss" {
+                "443".to_string()
+            } else {
+                "80".to_string()
+            }
+        }
+    }
+
     let source_http_url = url::Url::parse(&http_server)?;
 
     let source_ws_url = if let Some(ws_server) = ws_server {
@@ -27,45 +45,77 @@ pub fn build_urls(http_server: String, ws_server: Option<String>, token: String)
         } else {
             "ws"
         };
-
         let host = source_http_url.host().ok_or(ParseError::EmptyHost)?;
-
-        let port = if let Some(port) = source_http_url.port() {
-            port.to_string()
-        } else {
-            if source_http_url.scheme() == "https" {
-                "443".to_string()
-            } else {
-                "80".to_string()
-            }
-        };
-
+        let port = get_port(&source_http_url);
         url::Url::parse(format!("{}://{}:{}", scheme, host, port).as_str())?
     };
     
     let http_server = {
         let scheme = source_http_url.scheme();
         let host = source_http_url.host().ok_or(ParseError::EmptyHost)?;
-        let port = if let Some(port) = source_http_url.port() {
-            port.to_string()
-        } else {
-            if source_http_url.scheme() == "https" {
-                "443".to_string()
-            } else {
-                "80".to_string()
-            }
-        };
-        
+        let port = get_port(&source_http_url);
         format!("{}://{}:{}", scheme, host, port)
-    }
+    };
+
+    let ws_server = {
+        let scheme = source_ws_url.scheme();
+        let host = source_ws_url.host().ok_or(ParseError::EmptyHost)?;
+        let port = get_port(&source_ws_url);
+        format!("{}://{}:{}", scheme, host, port)
+    };
 
     let basic_info_url = format!(
         "{}/api/clients/uploadBasicInfo?token={}",
         http_server, token
     );
-    let real_time_url = format!("{}/api/clients/report?token={}", args.ws_server, args.token);
+    let real_time_url = format!("{}/api/clients/report?token={}", ws_server, token);
     let exec_callback_url = format!(
         "{}/api/clients/task/result?token={}",
         http_server, token
     );
+
+    info!("URL 解析成功");
+
+    Ok((basic_info_url, real_time_url, exec_callback_url))
+}
+
+pub async fn connect_ws(
+    url: &str,
+    tls: bool,
+    skip_verify: bool,
+) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, String> {
+    let connection_timeout = Duration::from_secs(10);
+
+    if tls {
+        if skip_verify {
+            timeout(
+                connection_timeout,
+                connect_async_tls_with_config(
+                    url,
+                    None,
+                    false,
+                    Some(Connector::Rustls(Arc::new(create_dangerous_config()))),
+                ),
+            )
+                .await
+                .map_err(|_| "WebSocket 连接超时".to_string())?
+                .map(|ws| ws.0)
+                .map_err(|_| "无法创立 WebSocket 连接".to_string())
+        } else {
+            timeout(
+                connection_timeout,
+                connect_async_tls_with_config(url, None, false, None),
+            )
+                .await
+                .map_err(|_| "WebSocket 连接超时".to_string())?
+                .map(|ws| ws.0)
+                .map_err(|_| "无法创立 WebSocket 连接".into())
+        }
+    } else {
+        timeout(connection_timeout, connect_async(url))
+            .await
+            .map_err(|_| "WebSocket 连接超时".to_string())?
+            .map(|ws| ws.0)
+            .map_err(|_| "无法创立 WebSocket 连接".to_string())
+    }
 }
