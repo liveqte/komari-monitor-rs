@@ -1,3 +1,5 @@
+use log::{debug, error, info};
+use crate::command_parser::IpProvider;
 use crate::{
     get_info::{
         arch, cpu_info_without_usage, ip, mem_info_without_usage, os, realtime_connections,
@@ -8,7 +10,6 @@ use crate::{
 };
 use miniserde::{Deserialize, Serialize};
 use sysinfo::{Disks, Networks};
-use crate::command_parser::IpProvider;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BasicInfo {
@@ -41,7 +42,7 @@ impl BasicInfo {
         let fake_swap_total = (mem_disk.swap_total as f64 * fake) as u64;
         let fake_mem_total = (mem_disk.mem_total as f64 * fake) as u64;
 
-        Self {
+        let basic_info = Self {
             arch: arch(),
             cpu_cores: fake_cpu_cores,
             cpu_name: cpu.name,
@@ -55,29 +56,39 @@ impl BasicInfo {
             version: format!("komari-monitor-rs {}", env!("CARGO_PKG_VERSION")),
             kernel_version: os.version,
             virtualization: os.virtualization,
-        }
+        };
+        
+        debug!("Basic Info 获取成功: {:?}", basic_info);
+        
+        basic_info
     }
 
     pub async fn push(
         &self,
         basic_info_url: &str,
         ignore_unsafe_cert: bool,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> () {
         let agent = create_ureq_agent(ignore_unsafe_cert);
         let json_string = miniserde::json::to_string(self);
         let resp = agent
             .post(basic_info_url)
             .header("User-Agent", "curl/11.45.14-rs")
-            .send(&json_string)
-            .map_err(|e| std::io::Error::other(format!("推送 Basic Info Post 时发生错误: {e}")))?;
+            .send(&json_string);
+        
+        let resp = match resp {
+            Ok(resp) => resp,
+            Err(e) => {
+                error!("推送 Basic Info 错误: {}", e);
+                return;
+            }
+        };
 
         if resp.status().is_success() {
-            Ok(())
+            info!("推送 Basic Info 成功");
+            return;
         } else {
-            Err(Box::new(std::io::Error::other(format!(
-                "推送 Basic Info 失败，HTTP 状态码: {}",
-                resp.status()
-            ))))
+            error!("推送 Basic Info 失败，HTTP 状态码: {}", resp.status());
+            return;
         }
     }
 }
@@ -176,7 +187,7 @@ impl RealTimeInfo {
         let process = realtime_process();
         let fake_process = (process as f64 * fake) as u64;
 
-        Self {
+        let realtime_info = Self {
             cpu,
             ram: Ram {
                 used: fake_ram_used,
@@ -205,6 +216,10 @@ impl RealTimeInfo {
             uptime: realtime_uptime(),
             process: fake_process,
             message: String::new(),
-        }
+        };
+        
+        debug!("实时信息获取成功: {:?}", realtime_info);
+        
+        realtime_info
     }
 }

@@ -8,6 +8,8 @@ repository = "https://github.com/GenshinMinecraft/ak_monitor_client_rs"
 license = "WTFPL"
 
 [dependencies]
+log = { version = "0.4.28", default-features = false, features = ["std"] }
+simple_logger = { version = "5.0.0", features = ["stderr", "time", "colored"] }
 tokio = { version = "1.47.1", default-features = false, features = ["rt-multi-thread", "macros", "time", "process", "sync", "net", "fs"] }
 rustls = { version = "0.23.32", default-features = false, features = ["ring"] }
 rustls-pki-types = "1.12.0"
@@ -20,6 +22,7 @@ sysinfo = { version = "0.37.0", default-features = false, features = ["disk", "s
 time = { version = "0.3.44", default-features = false, features = ["local-offset", "formatting"] }
 icmp-socket = "0.2.0"
 portable-pty = "0.9.0"
+url = { version = "2.5.7", default-features = false, features = ["std"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 raw-cpuid = "11.5.0"

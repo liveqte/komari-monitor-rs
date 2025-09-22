@@ -1,7 +1,7 @@
-use miniserde::{json, Deserialize, Serialize};
+use miniserde::{Deserialize, Serialize, json};
 use std::process::Stdio;
-use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
+use time::format_description::well_known::Rfc3339;
 use tokio::process::Command;
 
 use crate::rustls_config::create_ureq_agent;

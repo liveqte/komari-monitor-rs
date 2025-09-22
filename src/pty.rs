@@ -5,7 +5,7 @@ use std::io::{Read, Write};
 use std::sync::{Arc, Mutex};
 use tokio::{sync::mpsc, task};
 use tokio_tungstenite::tungstenite::Bytes;
-use tokio_tungstenite::{tungstenite::protocol::Message, WebSocketStream};
+use tokio_tungstenite::{WebSocketStream, tungstenite::protocol::Message};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TerminalEvent {

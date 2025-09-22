@@ -1,3 +1,4 @@
+use crate::command_parser::IpProvider;
 use crate::data_struct::{Connections, Cpu, Disk, Load, Network, Ram, Swap};
 use miniserde::{Deserialize, Serialize, json};
 use std::collections::HashSet;
@@ -5,15 +6,18 @@ use std::fs;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
 use std::time::Duration;
+use log::{debug, trace};
 use sysinfo::{Disks, Networks, System};
 use tokio::task::JoinHandle;
 use ureq::config::IpFamily;
-use crate::command_parser::IpProvider;
 
 pub fn arch() -> String {
-    std::env::consts::ARCH.to_string()
+    let arch = std::env::consts::ARCH.to_string();
+    trace!("ARCH 获取成功: {}", arch);
+    arch
 }
 
+#[derive(Debug)]
 pub struct CPUInfoWithOutUsage {
     pub name: String,
     pub cores: u16,
@@ -32,7 +36,11 @@ pub fn cpu_info_without_usage(sysinfo_sys: &System) -> CPUInfoWithOutUsage {
         .trim()
         .to_string();
 
-    CPUInfoWithOutUsage { name, cores }
+    let cpu_info = CPUInfoWithOutUsage { name, cores };
+    
+    trace!("CPU INFO WITH OUT USAGE 获取成功: {:?}", cpu_info);
+
+    cpu_info
 }
 
 #[derive(Debug)]
@@ -53,11 +61,15 @@ pub fn mem_info_without_usage(sysinfo_sys: &System) -> MemDiskInfoWithOutUsage {
         all_disk_space += disk.total_space();
     }
 
-    MemDiskInfoWithOutUsage {
+    let info = MemDiskInfoWithOutUsage {
         mem_total,
         swap_total,
         disk_total: all_disk_space,
-    }
+    };
+    
+    trace!("MEM DISK INFO WITH OUT USAGE 获取成功: {:?}", info);
+    
+    info
 }
 
 pub async fn ip(provider: &IpProvider) -> IPInfo {
@@ -67,6 +79,7 @@ pub async fn ip(provider: &IpProvider) -> IPInfo {
     }
 }
 
+#[derive(Debug)]
 pub struct IPInfo {
     pub ipv4: Option<Ipv4Addr>,
     pub ipv6: Option<Ipv6Addr>,
@@ -135,10 +148,14 @@ pub async fn ip_ipinfo() -> IPInfo {
         Ipv6Addr::from_str(json.ip.as_str()).ok()
     });
 
-    IPInfo {
+    let ip_info = IPInfo {
         ipv4: ipv4.await.unwrap(),
         ipv6: ipv6.await.unwrap(),
-    }
+    };
+    
+    trace!("IP INFO (ipinfo) 获取成功: {:?}", ip_info);
+    
+    ip_info
 }
 
 pub async fn ip_cloudflare() -> IPInfo {
@@ -196,12 +213,17 @@ pub async fn ip_cloudflare() -> IPInfo {
         Ipv6Addr::from_str(ip.as_str()).ok()
     });
 
-    IPInfo {
+    let ip_info = IPInfo {
         ipv4: ipv4.await.unwrap(),
         ipv6: ipv6.await.unwrap(),
-    }
+    };
+    
+    trace!("IP INFO (cloudflare) 获取成功: {:?}", ip_info);
+    
+    ip_info
 }
 
+#[derive(Debug)]
 pub struct OsInfo {
     pub os: String,
     pub version: String,
@@ -267,11 +289,15 @@ pub async fn os() -> OsInfo {
         }
     };
 
-    OsInfo {
+    let os_info = OsInfo {
         os,
         version: kernel_version,
         virtualization: virt,
-    }
+    };
+    
+    trace!("OS INFO 获取成功: {:?}", os_info);
+    
+    os_info
 }
 
 pub fn realtime_cpu(sysinfo_sys: &System) -> Cpu {
@@ -282,19 +308,25 @@ pub fn realtime_cpu(sysinfo_sys: &System) -> Cpu {
     }
     let avg = f64::from(avg) / cpus.len() as f64;
 
-    Cpu { usage: avg }
+    let cpu = Cpu { usage: avg };
+    trace!("REALTIME CPU 获取成功: {:?}", cpu);
+    cpu
 }
 
 pub fn realtime_mem(sysinfo_sys: &System) -> Ram {
-    Ram {
+    let ram = Ram {
         used: sysinfo_sys.total_memory() - sysinfo_sys.available_memory(),
-    }
+    };
+    trace!("REALTIME MEM 获取成功: {:?}", ram);
+    ram
 }
 
 pub fn realtime_swap(sysinfo_sys: &System) -> Swap {
-    Swap {
+    let swap = Swap {
         used: sysinfo_sys.used_swap(),
-    }
+    };
+    trace!("REALTIME SWAP 获取成功: {:?}", swap);
+    swap
 }
 
 pub fn realtime_disk(disk: &Disks) -> Disk {
@@ -304,26 +336,32 @@ pub fn realtime_disk(disk: &Disks) -> Disk {
         used_disk += disk.total_space() - disk.available_space();
     }
 
-    Disk { used: used_disk }
+    let disk_info = Disk { used: used_disk };
+    trace!("REALTIME DISK 获取成功: {:?}", disk_info);
+    disk_info
 }
 
 #[cfg(not(target_os = "windows"))]
 pub fn realtime_load() -> Load {
     let load = System::load_average();
-    Load {
+    let load_info = Load {
         load1: load.one,
         load5: load.five,
         load15: load.fifteen,
-    }
+    };
+    trace!("REALTIME LOAD 获取成功: {:?}", load_info);
+    load_info
 }
 
 #[cfg(target_os = "windows")]
 pub fn realtime_load() -> Load {
-    Load {
+    let load_info = Load {
         load1: 0.0,
         load5: 0.0,
         load15: 0.0,
-    }
+    };
+    trace!("REALTIME LOAD 获取成功: {:?}", load_info);
+    load_info
 }
 
 pub static mut DURATION: f64 = 0.0;
@@ -351,12 +389,14 @@ pub fn realtime_network(network: &Networks) -> Network {
     }
 
     unsafe {
-        Network {
+        let network_info = Network {
             up: (up as f64 / (DURATION / 1000.0)) as u64,
             down: (down as f64 / (DURATION / 1000.0)) as u64,
             total_up,
             total_down,
-        }
+        };
+        trace!("REALTIME NETWORK 获取成功: {:?}", network_info);
+        network_info
     }
 }
 
@@ -371,10 +411,12 @@ pub fn realtime_connections() -> Connections {
         connections_count_with_protocol(libc::AF_INET as u8, libc::IPPROTO_UDP as u8).unwrap_or(0);
     let udp6 =
         connections_count_with_protocol(libc::AF_INET6 as u8, libc::IPPROTO_UDP as u8).unwrap_or(0);
-    Connections {
+    let connections = Connections {
         tcp: tcp4 + tcp6,
         udp: udp4 + udp6,
-    }
+    };
+    trace!("REALTIME CONNECTIONS 获取成功: {:?}", connections);
+    connections
 }
 
 #[cfg(target_os = "windows")]
@@ -383,7 +425,9 @@ pub fn realtime_connections() -> Connections {
     let proto_flags = ProtocolFlags::TCP | ProtocolFlags::UDP;
 
     let Ok(sockets_iterator) = iterate_sockets_info_without_pids(proto_flags) else {
-        return Connections { tcp: 0, udp: 0 };
+        let connections = Connections { tcp: 0, udp: 0 };
+        trace!("REALTIME CONNECTIONS 获取成功: {:?}", connections);
+        return connections;
     };
 
     let (mut tcp_count, mut udp_count) = (0, 0);
@@ -395,25 +439,32 @@ pub fn realtime_connections() -> Connections {
         }
     }
 
-    Connections {
+    let connections = Connections {
         tcp: tcp_count,
         udp: udp_count,
-    }
+    };
+    trace!("REALTIME CONNECTIONS 获取成功: {:?}", connections);
+    connections
 }
 
 #[cfg(not(any(target_os = "linux", target_os = "windows")))]
 pub fn realtime_connections() -> Connections {
-    Connections { tcp: 0, udp: 0 }
+    let connections = Connections { tcp: 0, udp: 0 };
+    trace!("REALTIME CONNECTIONS 获取成功: {:?}", connections);
+    connections
 }
 
 pub fn realtime_uptime() -> u64 {
-    System::uptime()
+    let uptime = System::uptime();
+    trace!("REALTIME UPTIME 获取成功: {}", uptime);
+    uptime
 }
 
 pub fn realtime_process() -> u64 {
     let mut process_count = 0;
 
     let Ok(entries) = fs::read_dir("/proc") else {
+        trace!("REALTIME PROCESS 获取失败: 无法读取 /proc 目录");
         return 0;
     };
 
@@ -426,7 +477,9 @@ pub fn realtime_process() -> u64 {
         }
     }
 
-    process_count as u64
+    let process_count = process_count as u64;
+    trace!("REALTIME PROCESS 获取成功: {}", process_count);
+    process_count
 }
 
 pub fn filter_disks(disks: &Disks) -> Vec<&sysinfo::Disk> {

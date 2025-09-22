@@ -1,11 +1,13 @@
 // #![warn(clippy::all, clippy::pedantic)]
 
-use crate::command_parser::{Args, connect_ws};
+use crate::command_parser::{Args, LogLevel};
 use crate::data_struct::{BasicInfo, RealTimeInfo};
 use crate::exec::exec_command;
 use crate::ping::ping_target;
 use crate::pty::{get_pty_ws_link, handle_pty_session};
+use crate::utils::{build_urls, connect_ws, init_logger};
 use futures::{SinkExt, StreamExt};
+use log::{info, Level};
 use miniserde::{Deserialize, Serialize, json};
 use std::sync::Arc;
 use std::time::Duration;
@@ -24,21 +26,17 @@ mod rustls_config;
 
 #[cfg(target_os = "linux")]
 mod netlink;
+mod utils;
 
 #[tokio::main]
 async fn main() {
     let args = Args::par();
-    let basic_info_url = format!(
-        "{}/api/clients/uploadBasicInfo?token={}",
-        args.http_server, args.token
-    );
-    let real_time_url = format!("{}/api/clients/report?token={}", args.ws_server, args.token);
-    let exec_callback_url = format!(
-        "{}/api/clients/task/result?token={}",
-        args.http_server, args.token
-    );
 
-    println!("成功读取参数: {args:?}");
+    init_logger(&args.log_level);
+    
+    let (basic_info_url, real_time_url, exec_callback_url) = build_urls(&args.http_server, &args.ws_server, &args.token).unwrap();
+
+    info!("成功读取参数: {args:?}");
 
     loop {
         let Ok(ws_stream) = connect_ws(&real_time_url, args.tls, args.ignore_unsafe_cert).await

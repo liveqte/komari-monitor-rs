@@ -1,14 +1,7 @@
-use std::fmt::{Display, Formatter};
 use crate::get_info::DURATION;
-use crate::rustls_config::create_dangerous_config;
 use clap::{Parser, ValueEnum};
+use std::fmt::{Display, Formatter};
 use std::fs;
-use std::sync::Arc;
-use tokio::net::TcpStream;
-use tokio::time::{Duration, timeout};
-use tokio_tungstenite::{
-    Connector, MaybeTlsStream, WebSocketStream, connect_async, connect_async_tls_with_config,
-};
 
 /// Komari Monitor Agent
 #[derive(Parser, Debug, Clone)]
@@ -20,7 +13,7 @@ pub struct Args {
 
     /// 设置主端 WebSocket 地址
     #[arg(long)]
-    pub ws_server: String,
+    pub ws_server: Option<String>,
 
     /// 设置 Token
     #[arg(short, long)]
@@ -53,6 +46,10 @@ pub struct Args {
     /// 忽略证书验证
     #[arg(long, default_value_t = false)]
     pub ignore_unsafe_cert: bool,
+
+    /// 设置日志等级 (反馈问题请开启 Debug 或者 Trace)
+    #[arg(long, default_value_t = log_level())]
+    pub log_level: LogLevel,
 }
 
 fn terminal_entry() -> String {
@@ -78,6 +75,35 @@ impl Display for IpProvider {
     }
 }
 
+fn log_level() -> LogLevel {
+    LogLevel::Info
+}
+
+#[derive(Parser, Debug, Clone, ValueEnum)]
+pub enum LogLevel {
+    Error,
+    Warn,
+    Info,
+    Debug,
+    Trace,
+}
+
+impl Display for LogLevel {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                LogLevel::Error => "error",
+                LogLevel::Warn => "warn",
+                LogLevel::Info => "info",
+                LogLevel::Debug => "debug",
+                LogLevel::Trace => "trace",
+            }
+        )
+    }
+}
+
 impl Args {
     pub fn par() -> Self {
         let mut args = Self::parse();
@@ -99,43 +125,3 @@ impl Args {
     }
 }
 
-pub async fn connect_ws(
-    url: &str,
-    tls: bool,
-    skip_verify: bool,
-) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, String> {
-    let connection_timeout = Duration::from_secs(10);
-
-    if tls {
-        if skip_verify {
-            timeout(
-                connection_timeout,
-                connect_async_tls_with_config(
-                    url,
-                    None,
-                    false,
-                    Some(Connector::Rustls(Arc::new(create_dangerous_config()))),
-                ),
-            )
-            .await
-            .map_err(|_| "WebSocket 连接超时".to_string())?
-            .map(|ws| ws.0)
-            .map_err(|_| "无法创立 WebSocket 连接".to_string())
-        } else {
-            timeout(
-                connection_timeout,
-                connect_async_tls_with_config(url, None, false, None),
-            )
-            .await
-            .map_err(|_| "WebSocket 连接超时".to_string())?
-            .map(|ws| ws.0)
-            .map_err(|_| "无法创立 WebSocket 连接".into())
-        }
-    } else {
-        timeout(connection_timeout, connect_async(url))
-            .await
-            .map_err(|_| "WebSocket 连接超时".to_string())?
-            .map(|ws| ws.0)
-            .map_err(|_| "无法创立 WebSocket 连接".to_string())
-    }
-}
