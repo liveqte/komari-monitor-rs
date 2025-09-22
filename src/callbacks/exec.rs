@@ -67,7 +67,7 @@ pub async fn exec_command(
         finished_at,
     };
 
-    let agent = create_ureq_agent(ignore_unsafe_cert);
+    let agent = create_ureq_agent(*ignore_unsafe_cert);
 
     // 使用更少的内存方式发送请求
     let json_string = json::to_string(&reply);

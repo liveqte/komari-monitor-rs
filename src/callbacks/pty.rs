@@ -38,7 +38,7 @@ where
         })
         .map_err(|e| format!("无法创建 PTY: {e}"))?;
 
-    let mut cmd = CommandBuilder::new(cmd.clone());
+    let mut cmd = CommandBuilder::new(cmd);
 
     if !cfg!(windows) {
         cmd.env("TERM", "xterm-256color");

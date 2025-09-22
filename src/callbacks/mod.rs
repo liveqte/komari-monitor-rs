@@ -52,7 +52,7 @@ pub async fn handle_callbacks(
                 tokio::spawn({
                     let utf8_cloned_for_exec = utf8_cloned.clone();
                     let exec_callback_url = connection_urls.exec_callback_url.clone();
-                    let ignore_unsafe_cert = args.ignore_unsafe_cert.clone();
+                    let ignore_unsafe_cert = args.ignore_unsafe_cert;
 
                     async move {
                         if let Err(e) = exec_command(

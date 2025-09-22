@@ -81,10 +81,8 @@ impl BasicInfo {
 
         if resp.status().is_success() {
             info!("推送 Basic Info 成功");
-            return;
         } else {
             error!("推送 Basic Info 失败，HTTP 状态码: {}", resp.status());
-            return;
         }
     }
 }

@@ -26,7 +26,7 @@ pub fn init_logger(log_level: &LogLevel) {
 
 #[derive(Debug, Clone)]
 pub struct ConnectionUrls {
-    pub http_url_base: String,
+    pub _http_url_base: String,
     pub ws_url_base: String,
     pub basic_info_url: String,
     pub real_time_url: String,
@@ -41,19 +41,17 @@ pub fn build_urls(
     fn get_port(url: &url::Url) -> String {
         if let Some(port) = url.port() {
             port.to_string()
+        } else if url.scheme() == "https" || url.scheme() == "wss" {
+            "443".to_string()
         } else {
-            if url.scheme() == "https" || url.scheme() == "wss" {
-                "443".to_string()
-            } else {
-                "80".to_string()
-            }
+            "80".to_string()
         }
     }
 
-    let source_http_url = url::Url::parse(&http_server)?;
+    let source_http_url = url::Url::parse(http_server)?;
 
     let source_ws_url = if let Some(ws_server) = ws_server {
-        url::Url::parse(&ws_server)?
+        url::Url::parse(ws_server)?
     } else {
         let scheme = if source_http_url.scheme() == "https" {
             "wss"
@@ -87,7 +85,7 @@ pub fn build_urls(
     let exec_callback_url = format!("{}/api/clients/task/result?token={}", http_url_base, token);
 
     let connection_urls = ConnectionUrls {
-        http_url_base,
+        _http_url_base: http_url_base,
         ws_url_base,
         basic_info_url,
         real_time_url,

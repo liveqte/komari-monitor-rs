@@ -1,6 +1,6 @@
 use crate::command_parser::IpProvider;
 use crate::data_struct::{Connections, Cpu, Disk, Load, Network, Ram, Swap};
-use log::{debug, trace};
+use log::trace;
 use miniserde::{Deserialize, Serialize, json};
 use std::collections::HashSet;
 use std::fs;

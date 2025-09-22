@@ -1,13 +1,13 @@
 // #![warn(clippy::all, clippy::pedantic)]
 
 use crate::callbacks::handle_callbacks;
-use crate::command_parser::{Args, LogLevel};
+use crate::command_parser::Args;
 use crate::data_struct::{BasicInfo, RealTimeInfo};
 use crate::utils::{build_urls, connect_ws, init_logger};
 use futures::stream::{SplitSink, SplitStream};
 use futures::{SinkExt, StreamExt};
-use log::{Level, info, error};
-use miniserde::{Deserialize, Serialize, json};
+use log::{error, info};
+use miniserde::json;
 use std::sync::Arc;
 use std::time::Duration;
 use sysinfo::{CpuRefreshKind, DiskRefreshKind, Disks, MemoryRefreshKind, Networks, RefreshKind};
