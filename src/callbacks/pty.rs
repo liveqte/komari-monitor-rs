@@ -23,7 +23,7 @@ pub fn get_pty_ws_link(utf8_str: &str, ws_base: &str, token: &str) -> Result<Str
     ))
 }
 
-pub async fn handle_pty_session<S>(ws_stream: WebSocketStream<S>, cmd: String) -> Result<(), String>
+pub async fn handle_pty_session<S>(ws_stream: WebSocketStream<S>, cmd: &str) -> Result<(), String>
 where
     S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + 'static,
 {
@@ -38,7 +38,6 @@ where
         })
         .map_err(|e| format!("无法创建 PTY: {e}"))?;
 
-    let cmd_str = cmd.as_str();
     let mut cmd = CommandBuilder::new(cmd.clone());
 
     if !cfg!(windows) {
@@ -62,7 +61,7 @@ where
         .spawn_command(cmd)
         .map_err(|e| format!("无法启动进程: {e}"))?;
 
-    println!("在 PTY 中启动了 {cmd_str}, PID: {:?}", child.process_id());
+    println!("在 PTY 中启动了终端, PID: {:?}", child.process_id());
 
     let (ws_sender, mut ws_receiver) = ws_stream.split();
 

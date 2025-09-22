@@ -22,7 +22,18 @@ pub fn init_logger(log_level: &LogLevel) {
     }
 }
 
-pub fn build_urls(http_server: &str, ws_server: &Option<String>, token: &str) -> Result<(String, String, String), ParseError> {
+
+#[derive(Debug)]
+pub struct ConnectionUrls {
+    pub http_url_base: String,
+    pub ws_url_base: String,
+    pub basic_info_url: String,
+    pub real_time_url: String,
+    pub exec_callback_url: String,
+}
+
+
+pub fn build_urls(http_server: &str, ws_server: &Option<String>, token: &str) -> Result<ConnectionUrls, ParseError> {
     fn get_port(url: &url::Url) -> String {
         if let Some(port) = url.port() {
             port.to_string()
@@ -50,14 +61,14 @@ pub fn build_urls(http_server: &str, ws_server: &Option<String>, token: &str) ->
         url::Url::parse(format!("{}://{}:{}", scheme, host, port).as_str())?
     };
     
-    let http_server = {
+    let http_url_base = {
         let scheme = source_http_url.scheme();
         let host = source_http_url.host().ok_or(ParseError::EmptyHost)?;
         let port = get_port(&source_http_url);
         format!("{}://{}:{}", scheme, host, port)
     };
 
-    let ws_server = {
+    let ws_url_base = {
         let scheme = source_ws_url.scheme();
         let host = source_ws_url.host().ok_or(ParseError::EmptyHost)?;
         let port = get_port(&source_ws_url);
@@ -66,17 +77,25 @@ pub fn build_urls(http_server: &str, ws_server: &Option<String>, token: &str) ->
 
     let basic_info_url = format!(
         "{}/api/clients/uploadBasicInfo?token={}",
-        http_server, token
+        http_url_base, token
     );
-    let real_time_url = format!("{}/api/clients/report?token={}", ws_server, token);
+    let real_time_url = format!("{}/api/clients/report?token={}", ws_url_base, token);
     let exec_callback_url = format!(
         "{}/api/clients/task/result?token={}",
-        http_server, token
+        http_url_base, token
     );
 
-    info!("URL 解析成功");
+    let connection_urls = ConnectionUrls {
+        http_url_base,
+        ws_url_base,
+        basic_info_url,
+        real_time_url,
+        exec_callback_url,
+    };
 
-    Ok((basic_info_url, real_time_url, exec_callback_url))
+    info!("URL 解析成功: {connection_urls:?}");
+
+    Ok(connection_urls)
 }
 
 pub async fn connect_ws(
