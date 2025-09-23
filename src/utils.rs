@@ -8,7 +8,7 @@ use tokio::time::timeout;
 use tokio_tungstenite::{
     Connector, MaybeTlsStream, WebSocketStream, connect_async, connect_async_tls_with_config,
 };
-use url::ParseError;
+use url::{ParseError, Url};
 
 pub fn init_logger(log_level: &LogLevel) {
     #[cfg(target_os = "windows")]
@@ -25,11 +25,10 @@ pub fn init_logger(log_level: &LogLevel) {
 
 #[derive(Debug, Clone)]
 pub struct ConnectionUrls {
-    pub _http_url_base: String,
-    pub ws_url_base: String,
     pub basic_info_url: String,
-    pub real_time_url: String,
     pub exec_callback_url: String,
+    pub ws_terminal_url: String,
+    pub ws_real_time_url: String,
 }
 
 pub fn build_urls(
@@ -37,58 +36,38 @@ pub fn build_urls(
     ws_server: &Option<String>,
     token: &str,
 ) -> Result<ConnectionUrls, ParseError> {
-    fn get_port(url: &url::Url) -> String {
-        if let Some(port) = url.port() {
-            port.to_string()
-        } else if url.scheme() == "https" || url.scheme() == "wss" {
-            "443".to_string()
-        } else {
-            "80".to_string()
-        }
-    }
+    // 1. 构造 http_url_base
+    let http_url = Url::parse(http_server)?;
+    let http_url_base = http_url.as_str().trim_end_matches('/');
 
-    let source_http_url = url::Url::parse(http_server)?;
-
-    let source_ws_url = if let Some(ws_server) = ws_server {
-        url::Url::parse(ws_server)?
+    // 2. 构造 ws_url_base
+    let ws_url = if let Some(ws) = ws_server {
+        Url::parse(ws)?
     } else {
-        let scheme = if source_http_url.scheme() == "https" {
-            "wss"
-        } else {
-            "ws"
-        };
-        let host = source_http_url.host().ok_or(ParseError::EmptyHost)?;
-        let port = get_port(&source_http_url);
-        url::Url::parse(format!("{}://{}:{}", scheme, host, port).as_str())?
+        let mut ws_url = http_url.clone();
+        match ws_url.scheme() {
+            "http" => ws_url.set_scheme("ws").unwrap(),
+            "https" => ws_url.set_scheme("wss").unwrap(),
+            other => panic!("不支持的 scheme: {}", other),
+        }
+        ws_url
     };
+    let ws_url_base = ws_url.as_str().trim_end_matches('/').to_string();
 
-    let http_url_base = {
-        let scheme = source_http_url.scheme();
-        let host = source_http_url.host().ok_or(ParseError::EmptyHost)?;
-        let port = get_port(&source_http_url);
-        format!("{}://{}:{}", scheme, host, port)
-    };
-
-    let ws_url_base = {
-        let scheme = source_ws_url.scheme();
-        let host = source_ws_url.host().ok_or(ParseError::EmptyHost)?;
-        let port = get_port(&source_ws_url);
-        format!("{}://{}:{}", scheme, host, port)
-    };
-
+    // 3. 构造各个最终 URL
     let basic_info_url = format!(
         "{}/api/clients/uploadBasicInfo?token={}",
         http_url_base, token
     );
-    let real_time_url = format!("{}/api/clients/report?token={}", ws_url_base, token);
     let exec_callback_url = format!("{}/api/clients/task/result?token={}", http_url_base, token);
+    let ws_terminal_url = format!("{}/api/clients/terminal?token={}", ws_url_base, token);
+    let ws_real_time_url = format!("{}/api/clients/report?token={}", ws_url_base, token);
 
     let connection_urls = ConnectionUrls {
-        _http_url_base: http_url_base,
-        ws_url_base,
         basic_info_url,
-        real_time_url,
         exec_callback_url,
+        ws_terminal_url,
+        ws_real_time_url,
     };
 
     info!("URL 解析成功: {connection_urls:?}");

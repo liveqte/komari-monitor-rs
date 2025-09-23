@@ -49,23 +49,25 @@ pub async fn handle_callbacks(
 
         match json.message.as_str() {
             "exec" => {
-                if args.terminal {tokio::spawn({
-                    let utf8_cloned_for_exec = utf8_cloned.clone();
-                    let exec_callback_url = connection_urls.exec_callback_url.clone();
-                    let ignore_unsafe_cert = args.ignore_unsafe_cert;
+                if args.terminal {
+                    tokio::spawn({
+                        let utf8_cloned_for_exec = utf8_cloned.clone();
+                        let exec_callback_url = connection_urls.exec_callback_url.clone();
+                        let ignore_unsafe_cert = args.ignore_unsafe_cert;
 
-                    async move {
-                        if let Err(e) = exec_command(
-                            &utf8_cloned_for_exec,
-                            &exec_callback_url,
-                            &ignore_unsafe_cert,
-                        )
+                        async move {
+                            if let Err(e) = exec_command(
+                                &utf8_cloned_for_exec,
+                                &exec_callback_url,
+                                &ignore_unsafe_cert,
+                            )
                             .await
-                        {
-                            error!("Exec Error: {e}");
+                            {
+                                error!("Exec Error: {e}");
+                            }
                         }
-                    }
-                });} else { 
+                    });
+                } else {
                     error!("终端功能未启用");
                 }
             }
@@ -93,13 +95,12 @@ pub async fn handle_callbacks(
 
             "terminal" => {
                 if args.terminal {
-                    let ws_url_base = connection_urls.clone().ws_url_base.clone();
+                    let ws_terminal_url = connection_urls.clone().ws_terminal_url.clone();
                     let args = args.clone();
                     let utf8_cloned = utf8_cloned.clone();
 
                     tokio::spawn(async move {
-                        let ws_url = match get_pty_ws_link(&utf8_cloned, &ws_url_base, &args.token)
-                        {
+                        let ws_url = match get_pty_ws_link(&utf8_cloned, &ws_terminal_url) {
                             Ok(ws_url) => ws_url,
                             Err(e) => {
                                 error!("无法获取 PTY Websocket URL: {e}");

@@ -13,12 +13,12 @@ pub struct TerminalEvent {
     request_id: String,
 }
 
-pub fn get_pty_ws_link(utf8_str: &str, ws_base: &str, token: &str) -> Result<String, String> {
+pub fn get_pty_ws_link(utf8_str: &str, ws_terminal_url: &str) -> Result<String, String> {
     let ping_event: TerminalEvent =
         miniserde::json::from_str(utf8_str).map_err(|_| "无法解析 TerminalEvent".to_string())?;
 
     Ok(format!(
-        "{ws_base}/api/clients/terminal?token={token}&id={request_id}",
+        "{ws_terminal_url}&id={request_id}",
         request_id = ping_event.request_id
     ))
 }

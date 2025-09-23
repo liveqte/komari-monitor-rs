@@ -39,7 +39,7 @@ async fn main() {
 
     loop {
         let Ok(ws_stream) = connect_ws(
-            &connection_urls.real_time_url,
+            &connection_urls.ws_real_time_url,
             args.tls,
             args.ignore_unsafe_cert,
         )
