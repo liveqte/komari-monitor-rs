@@ -3,6 +3,14 @@
 ![](https://hitscounter.dev/api/hit?url=https%3A%2F%2Fgithub.com%2Frsbench%2Frsbench&label=&icon=github&color=%23160d27)
 ![komari-monitor-rs](https://socialify.git.ci/GenshinMinecraft/komari-monitor-rs/image?custom_description=Komari+%E7%AC%AC%E4%B8%89%E6%96%B9+Agent+%7C+%E9%AB%98%E6%80%A7%E8%83%BD&description=1&font=KoHo&forks=1&issues=1&language=1&name=1&owner=1&pattern=Floating+Cogs&pulls=1&stargazers=1&theme=Auto)
 
+## 近期更新
+
+- 现已支持自动推断 ws_server 参数，若未设置则自动从 http_server 参数中推断
+- 现已支持自定义 LogLevel，可用 `--log-level` 参数指定 `error` / `warn` / `info` / `debug` / `trace` (反馈问题请使用 `debug` / `trace`)
+- 现已支持更改公网 IP 获取 API，可选 `cloudflare` 与 `ipinfo`
+- 现已支持 PTY 功能，可以从管理面板取得 TTY 终端。由于安全问题，需要手动设置 `--terminal` 参数以开启该功能，并可通过 `--terminal-entry` 参数自定义终端入口 (Windows 默认 cmd.exe，其它系统默认 bash)
+- exec 后台命令执行功能共用 `--terminal` 参数，若未打开则不会执行主控的命令
+
 ## About
 
 `Komari-Monitor-rs` 是一个适用于 [komari-monitor](https://github.com/komari-monitor) 监控服务的第三方**高性能**监控
@@ -63,7 +71,7 @@ Agent
 ```
 Komari Monitor Agent in Rust
 
-Usage: komari-monitor-rs.exe [OPTIONS] --http-server <HTTP_SERVER> --ws-server <WS_SERVER> --token <TOKEN>
+Usage: komari-monitor-rs [OPTIONS] --http-server <HTTP_SERVER> --token <TOKEN>
 
 Options:
       --http-server <HTTP_SERVER>
@@ -86,34 +94,15 @@ Options:
           启用 TLS (默认关闭)
       --ignore-unsafe-cert
           忽略证书验证
+      --log-level <LOG_LEVEL>
+          设置日志等级 (反馈问题请开启 Debug 或者 Trace) [default: info] [possible values: error, warn, info, debug, trace]
   -h, --help
           Print help
   -V, --version
           Print version
 ```
 
-必须设置 `--http-server` / `--ws-server` / `--token`
-
-在原版上，http 与 ws server 写在同一个参数上，本项目将其分离，便于在奇奇怪怪的环境下部署 (比如 ServerLess)
-
-`--fake` 参数可以让你的小鸡拥有无穷的算力，装逼必备
-
-现已支持 PTY 功能，可以从管理面板取得 TTY 终端。由于安全问题，需要手动设置 `--terminal` 参数以开启该功能，并可通过
-`--terminal-entry` 参数自定义终端入口 (Windows 默认 cmd.exe，其它系统默认 bash)
-
-Demo:
-
-```
-./komari-monitor-rs --http-server http://localhost:25774 --ws-server ws://localhost:25774 --token 1GOJpgn0eXk0orz7
-```
-
-```
-./komari-monitor-rs --http-server http://localhost:25774 --ws-server ws://localhost:25774 --token 1GOJpgn0eXk0orz7 --fake 100
-```
-
-```
-./komari-monitor-rs --http-server https://localhost:25774 --ws-server wss://localhost:25774 --token 1GOJpgn0eXk0orz7 --tls --ignore-unsafe-cert
-```
+必须设置 `--http-server` / `--token`
 
 ## LICENSE
 
