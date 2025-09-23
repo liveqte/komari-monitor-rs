@@ -11,9 +11,8 @@ use tokio_tungstenite::{
 use url::ParseError;
 
 pub fn init_logger(log_level: &LogLevel) {
-    if cfg!(target_os = "windows") {
-        simple_logger::set_up_windows_color_terminal();
-    }
+    #[cfg(target_os = "windows")]
+    simple_logger::set_up_windows_color_terminal();
 
     match log_level {
         LogLevel::Error => simple_logger::init_with_level(Level::Error).unwrap(),
