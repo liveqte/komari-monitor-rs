@@ -170,8 +170,8 @@ jobs:
           CROSS_NO_WARNINGS: 0
       - name: Install Upx Binary
         run: sudo apt install -y upx
-#      - name: Compress binary
-#        run: upx --brute target/${{ matrix.platform.target }}/minimal/komari-monitor-rs
+      - name: Compress binary
+        run: upx --brute target/${{ matrix.platform.target }}/minimal/komari-monitor-rs
       - name: Rename binary
         run: cp target/${{ matrix.platform.target }}/minimal/komari-monitor-rs target/${{ matrix.platform.target }}/minimal/${{ matrix.platform.binary_name }}
       - name: Upload binary
