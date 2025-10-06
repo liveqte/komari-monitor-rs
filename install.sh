@@ -204,7 +204,7 @@ main() {
     log_info "正在创建 systemd 服务..."
 
     # 构建启动命令
-    EXEC_START_CMD="${INSTALL_PATH} --http-server \"${HTTP_SERVER}\" --ws-server \"${WS_SERVER}\" --token \'${TOKEN}\' --fake \"${FAKE}\" --realtime-info-interval \"${INTERVAL}\""
+    EXEC_START_CMD="${INSTALL_PATH} --http-server \"${HTTP_SERVER}\" --ws-server \"${WS_SERVER}\" --token \"${TOKEN}\" --fake \"${FAKE}\" --realtime-info-interval \"${INTERVAL}\""
     if [ -n "$TLS_FLAG" ]; then
         EXEC_START_CMD="$EXEC_START_CMD $TLS_FLAG"
     fi
