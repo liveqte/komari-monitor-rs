@@ -30,7 +30,30 @@ pub struct PingEventCallback {
     pub finished_at: String,
 }
 
-// 直接接收字符串参数，避免重复解析
+fn split_address(addr: &str) -> Option<(IpAddr, u16)> {
+    if let Ok(ip) = addr.parse() {
+        return Some((ip, 80));
+    }
+
+    if let Some(pos) = addr.rfind(':') {
+        let (host_part, port_part) = addr.split_at(pos);
+        let port_part = &port_part[1..]; // 去掉冒号
+
+        let host_part = host_part.trim_start_matches('[').trim_end_matches(']');
+
+        if let Ok(ip) = host_part.parse() {
+            if port_part.is_empty() {
+                return Some((ip, 80));
+            }
+            if let Ok(port) = port_part.parse() {
+                return Some((ip, port));
+            }
+        }
+    }
+
+    None
+}
+
 pub async fn ping_target(utf8_str: &str) -> Result<PingEventCallback, String> {
     let ping_event: PingEvent =
         miniserde::json::from_str(utf8_str).map_err(|_| "无法解析 PingEvent".to_string())?;
@@ -53,9 +76,16 @@ pub async fn ping_target(utf8_str: &str) -> Result<PingEventCallback, String> {
         "tcp" => {
             let start_time = Instant::now();
 
+            let (ip, port) = match split_address(&ping_event.ping_target) {
+                None => {
+                    return Err(String::from("无法解析 IP 地址"));
+                }
+                Some(split) => split,
+            };
+
             let ping = match tokio::time::timeout(
                 Duration::from_secs(10),
-                TcpStream::connect(&ping_event.ping_target), // 避免克隆
+                TcpStream::connect(format!("{}:{}", ip, port)),
             )
             .await
             {
