@@ -16,7 +16,7 @@ pub struct Args {
     pub ws_server: Option<String>,
 
     /// 设置 Token
-    #[arg(short, long)]
+    #[arg(short, long, allow_hyphen_values = true)]
     pub token: String,
 
     /// 公网 IP 接口
