@@ -58,7 +58,7 @@ impl BasicInfo {
             virtualization: os.virtualization,
         };
 
-        debug!("Basic Info 获取成功: {:?}", basic_info);
+        debug!("Basic Info 获取成功: {basic_info:?}");
 
         basic_info
     }
@@ -74,7 +74,7 @@ impl BasicInfo {
         let resp = match resp {
             Ok(resp) => resp,
             Err(e) => {
-                error!("推送 Basic Info 错误: {}", e);
+                error!("推送 Basic Info 错误: {e}");
                 return;
             }
         };
@@ -212,7 +212,7 @@ impl RealTimeInfo {
             message: String::new(),
         };
 
-        debug!("实时信息获取成功: {:?}", realtime_info);
+        debug!("实时信息获取成功: {realtime_info:?}");
 
         realtime_info
     }

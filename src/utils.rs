@@ -48,20 +48,17 @@ pub fn build_urls(
         match ws_url.scheme() {
             "http" => ws_url.set_scheme("ws").unwrap(),
             "https" => ws_url.set_scheme("wss").unwrap(),
-            other => panic!("不支持的 scheme: {}", other),
+            other => panic!("不支持的 scheme: {other}"),
         }
         ws_url
     };
     let ws_url_base = ws_url.as_str().trim_end_matches('/').to_string();
 
     // 3. 构造各个最终 URL
-    let basic_info_url = format!(
-        "{}/api/clients/uploadBasicInfo?token={}",
-        http_url_base, token
-    );
-    let exec_callback_url = format!("{}/api/clients/task/result?token={}", http_url_base, token);
-    let ws_terminal_url = format!("{}/api/clients/terminal?token={}", ws_url_base, token);
-    let ws_real_time_url = format!("{}/api/clients/report?token={}", ws_url_base, token);
+    let basic_info_url = format!("{http_url_base}/api/clients/uploadBasicInfo?token={token}");
+    let exec_callback_url = format!("{http_url_base}/api/clients/task/result?token={token}");
+    let ws_terminal_url = format!("{ws_url_base}/api/clients/terminal?token={token}");
+    let ws_real_time_url = format!("{ws_url_base}/api/clients/report?token={token}");
 
     let connection_urls = ConnectionUrls {
         basic_info_url,

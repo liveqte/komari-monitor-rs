@@ -85,7 +85,7 @@ pub async fn ping_target(utf8_str: &str) -> Result<PingEventCallback, String> {
 
             let ping = match tokio::time::timeout(
                 Duration::from_secs(10),
-                TcpStream::connect(format!("{}:{}", ip, port)),
+                TcpStream::connect(format!("{ip}:{port}")),
             )
             .await
             {

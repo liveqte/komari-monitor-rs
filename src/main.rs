@@ -1,4 +1,4 @@
-// #![warn(clippy::all, clippy::pedantic)]
+#![warn(clippy::all, clippy::pedantic)]
 
 use crate::callbacks::handle_callbacks;
 use crate::command_parser::Args;
@@ -71,7 +71,7 @@ async fn main() {
                     &mut read,
                     &locked_write_cloned,
                 )
-                .await
+                .await;
             });
         }
 

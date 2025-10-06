@@ -13,7 +13,7 @@ use ureq::config::IpFamily;
 
 pub fn arch() -> String {
     let arch = std::env::consts::ARCH.to_string();
-    trace!("ARCH 获取成功: {}", arch);
+    trace!("ARCH 获取成功: {arch}");
     arch
 }
 
@@ -38,7 +38,7 @@ pub fn cpu_info_without_usage(sysinfo_sys: &System) -> CPUInfoWithOutUsage {
 
     let cpu_info = CPUInfoWithOutUsage { name, cores };
 
-    trace!("CPU INFO WITH OUT USAGE 获取成功: {:?}", cpu_info);
+    trace!("CPU INFO WITH OUT USAGE 获取成功: {cpu_info:?}");
 
     cpu_info
 }
@@ -67,7 +67,7 @@ pub fn mem_info_without_usage(sysinfo_sys: &System) -> MemDiskInfoWithOutUsage {
         disk_total: all_disk_space,
     };
 
-    trace!("MEM DISK INFO WITH OUT USAGE 获取成功: {:?}", info);
+    trace!("MEM DISK INFO WITH OUT USAGE 获取成功: {info:?}");
 
     info
 }
@@ -153,7 +153,7 @@ pub async fn ip_ipinfo() -> IPInfo {
         ipv6: ipv6.await.unwrap(),
     };
 
-    trace!("IP INFO (ipinfo) 获取成功: {:?}", ip_info);
+    trace!("IP INFO (ipinfo) 获取成功: {ip_info:?}");
 
     ip_info
 }
@@ -220,7 +220,7 @@ pub async fn ip_cloudflare() -> IPInfo {
         ipv6: ipv6.await.unwrap(),
     };
 
-    trace!("IP INFO (cloudflare) 获取成功: {:?}", ip_info);
+    trace!("IP INFO (cloudflare) 获取成功: {ip_info:?}");
 
     ip_info
 }
@@ -297,7 +297,7 @@ pub async fn os() -> OsInfo {
         virtualization: virt,
     };
 
-    trace!("OS INFO 获取成功: {:?}", os_info);
+    trace!("OS INFO 获取成功: {os_info:?}");
 
     os_info
 }
@@ -311,7 +311,7 @@ pub fn realtime_cpu(sysinfo_sys: &System) -> Cpu {
     let avg = f64::from(avg) / cpus.len() as f64;
 
     let cpu = Cpu { usage: avg };
-    trace!("REALTIME CPU 获取成功: {:?}", cpu);
+    trace!("REALTIME CPU 获取成功: {cpu:?}");
     cpu
 }
 
@@ -319,7 +319,7 @@ pub fn realtime_mem(sysinfo_sys: &System) -> Ram {
     let ram = Ram {
         used: sysinfo_sys.total_memory() - sysinfo_sys.available_memory(),
     };
-    trace!("REALTIME MEM 获取成功: {:?}", ram);
+    trace!("REALTIME MEM 获取成功: {ram:?}");
     ram
 }
 
@@ -327,7 +327,7 @@ pub fn realtime_swap(sysinfo_sys: &System) -> Swap {
     let swap = Swap {
         used: sysinfo_sys.used_swap(),
     };
-    trace!("REALTIME SWAP 获取成功: {:?}", swap);
+    trace!("REALTIME SWAP 获取成功: {swap:?}");
     swap
 }
 
@@ -339,7 +339,7 @@ pub fn realtime_disk(disk: &Disks) -> Disk {
     }
 
     let disk_info = Disk { used: used_disk };
-    trace!("REALTIME DISK 获取成功: {:?}", disk_info);
+    trace!("REALTIME DISK 获取成功: {disk_info:?}");
     disk_info
 }
 
@@ -362,7 +362,7 @@ pub fn realtime_load() -> Load {
         load5: 0.0,
         load15: 0.0,
     };
-    trace!("REALTIME LOAD 获取成功: {:?}", load_info);
+    trace!("REALTIME LOAD 获取成功: {load_info:?}");
     load_info
 }
 
@@ -397,7 +397,7 @@ pub fn realtime_network(network: &Networks) -> Network {
             total_up,
             total_down,
         };
-        trace!("REALTIME NETWORK 获取成功: {:?}", network_info);
+        trace!("REALTIME NETWORK 获取成功: {network_info:?}");
         network_info
     }
 }
@@ -428,7 +428,7 @@ pub fn realtime_connections() -> Connections {
 
     let Ok(sockets_iterator) = iterate_sockets_info_without_pids(proto_flags) else {
         let connections = Connections { tcp: 0, udp: 0 };
-        trace!("REALTIME CONNECTIONS 获取成功: {:?}", connections);
+        trace!("REALTIME CONNECTIONS 获取成功: {connections:?}");
         return connections;
     };
 
@@ -445,7 +445,7 @@ pub fn realtime_connections() -> Connections {
         tcp: tcp_count,
         udp: udp_count,
     };
-    trace!("REALTIME CONNECTIONS 获取成功: {:?}", connections);
+    trace!("REALTIME CONNECTIONS 获取成功: {connections:?}");
     connections
 }
 
@@ -458,7 +458,7 @@ pub fn realtime_connections() -> Connections {
 
 pub fn realtime_uptime() -> u64 {
     let uptime = System::uptime();
-    trace!("REALTIME UPTIME 获取成功: {}", uptime);
+    trace!("REALTIME UPTIME 获取成功: {uptime}");
     uptime
 }
 
@@ -480,7 +480,7 @@ pub fn realtime_process() -> u64 {
     }
 
     let process_count = process_count as u64;
-    trace!("REALTIME PROCESS 获取成功: {}", process_count);
+    trace!("REALTIME PROCESS 获取成功: {process_count}");
     process_count
 }
 
