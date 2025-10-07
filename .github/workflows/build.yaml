@@ -163,7 +163,7 @@ jobs:
       - name: Install Cross
         run: cargo install cross --git https://github.com/cross-rs/cross
       - name: Build binary
-        run: cross build --target ${{ matrix.platform.target }} --features ureq-support --profile minimal --jobs 32 --locked
+        run: cargo clean && cross build --target ${{ matrix.platform.target }} --features ureq-support --profile minimal --jobs 32 --locked
         env:
           CROSS_NO_WARNINGS: 0
       - name: Compress binary
@@ -190,7 +190,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build nyquest binary
-        run: cross build --target ${{ matrix.platform.target }} --features nyquest-support --profile minimal --jobs 32 --locked
+        run: cargo clean && cross build --target ${{ matrix.platform.target }} --features nyquest-support --profile minimal --jobs 32 --locked
         env:
           CROSS_NO_WARNINGS: 0
       - name: Compress binary
@@ -224,7 +224,7 @@ jobs:
       - name: Install Rust Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Cargo Build
-        run: cargo build --profile minimal --features ureq-support
+        run: cargo clean && cargo build --profile minimal --features ureq-support
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -245,7 +245,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cargo Build nyquest
-        run: cargo build --profile minimal --features nyquest-support
+        run: cargo clean && cargo build --profile minimal --features nyquest-support
       - name: Rename Binary
         run: move target/minimal/komari-monitor-rs.exe target/minimal/komari-monitor-rs-nyquest.exe
       - name: Upload Artifact
@@ -275,7 +275,7 @@ jobs:
       - name: Install Rust Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Cargo Build
-        run: cargo build --profile minimal --features ureq-support
+        run: cargo clean && cargo build --profile minimal --features ureq-support
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -298,7 +298,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cargo Build nyquest
-        run: cargo build --profile minimal --features nyquest-support
+        run: cargo clean && cargo build --profile minimal --features nyquest-support
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -330,7 +330,7 @@ jobs:
         with:
           cache: false
       - name: Cargo Build
-        run: cargo build --profile minimal --features ureq-support
+        run: cargo clean && cargo build --profile minimal --features ureq-support
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -353,7 +353,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cargo Build nyquest
-        run: cargo build --profile minimal --features nyquest-support
+        run: cargo clean && cargo build --profile minimal --features nyquest-support
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
