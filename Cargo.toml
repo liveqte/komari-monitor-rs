@@ -15,7 +15,7 @@ rustls = { version = "0.23.32", default-features = false, features = ["ring"] }
 rustls-pki-types = "1.12.0"
 futures = { version = "0.3.31", default-features = false, features = ["std"] }
 miniserde = { version = "0.1.42", default-features = false, features = ["std"] }
-tokio-tungstenite = { version = "0.27.0", default-features = false, features = ["rustls-tls-webpki-roots", "connect"] }
+tokio-tungstenite = { version = "0.28.0", default-features = false, features = ["rustls-tls-webpki-roots", "connect"] }
 clap = { version = "4.5.48", default-features = false, features = ["std", "derive", "usage", "help"] }
 sysinfo = { version = "0.37.0", default-features = false, features = ["disk", "system", "multithread", "network"] }
 time = { version = "0.3.44", default-features = false, features = ["local-offset", "formatting"] }
@@ -27,9 +27,12 @@ ureq = { version = "3.1.2", default-features = false, features = ["gzip", "rustl
 nyquest = { version = "0.3.0", default-features = false, features = ["async"], optional = true }
 nyquest-preset = { version = "0.3.0", default-features = false, features = ["async"], optional = true }
 
+[target.'cfg(not(target_os = "windows"))'.dependencies]
+openssl-sys = { version = "0.9", features = ["vendored"], optional = true }
+
 [features]
 ureq-support = ["ureq"]
-nyquest-support = ["nyquest", "nyquest-preset"]
+nyquest-support = ["nyquest", "nyquest-preset", "openssl-sys"]
 
 [target.'cfg(target_os = "windows")'.dependencies]
 raw-cpuid = "11.5.0"
@@ -38,9 +41,6 @@ netstat2 = "0.11.2"
 [target.'cfg(target_os = "linux")'.dependencies]
 heim-virt = "0.1.0-alpha.1"
 libc = "0.2.175"
-
-[workspace.metadata.cross.target.aarch64-linux-android]
-image = "genshinmc/rust-cross-new-ndk-aarch64-linux-android:0.0.1"
 
 [profile]
 dev = { opt-level = 3 }
