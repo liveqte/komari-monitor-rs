@@ -202,19 +202,6 @@ jobs:
         with:
           name: ${{ matrix.platform.target }}-nyquest
           path: target/${{ matrix.platform.target }}/minimal/${{ matrix.platform.binary_name }}-nyquest
-      - name: Publish to GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            target/${{ matrix.platform.target }}/minimal/${{ matrix.platform.binary_name }}-nyquest
-          tag_name: latest # 使用固定的标签名称作为发布版本号
-          body: |
-            Note: All Release operations will publish the Binary and software packages here
-            Latest release for Commit: ${{ github.sha }}
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   windows-release:
     runs-on: windows-latest
