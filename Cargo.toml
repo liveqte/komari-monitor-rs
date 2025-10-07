@@ -27,9 +27,6 @@ ureq = { version = "3.1.2", default-features = false, features = ["gzip", "rustl
 nyquest = { version = "0.3.0", default-features = false, features = ["async"], optional = true }
 nyquest-preset = { version = "0.3.0", default-features = false, features = ["async"], optional = true }
 
-[target.'cfg(not(target_os = "windows"))'.dependencies]
-openssl-sys = { version = "0.9", features = ["vendored"], optional = true }
-
 [features]
 ureq-support = ["ureq"]
 nyquest-support = ["nyquest", "nyquest-preset", "openssl-sys"]
@@ -41,6 +38,7 @@ netstat2 = "0.11.2"
 [target.'cfg(target_os = "linux")'.dependencies]
 heim-virt = "0.1.0-alpha.1"
 libc = "0.2.175"
+openssl-sys = { version = "0.9", features = ["vendored"], optional = true }
 
 [profile]
 dev = { opt-level = 3 }
