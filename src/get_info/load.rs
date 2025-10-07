@@ -3,6 +3,7 @@ use log::trace;
 
 #[cfg(not(target_os = "windows"))]
 pub fn realtime_load() -> Load {
+    use sysinfo::System;
     let load = System::load_average();
     let load_info = Load {
         load1: load.one,
