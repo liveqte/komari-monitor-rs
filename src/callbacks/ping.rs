@@ -30,28 +30,29 @@ pub struct PingEventCallback {
     pub finished_at: String,
 }
 
-fn split_address(addr: &str) -> Option<(IpAddr, u16)> {
-    if let Ok(ip) = addr.parse() {
-        return Some((ip, 80));
+fn split_address(addr: &str) -> Option<(String, u16)> {
+    if let Ok(ip) = addr.parse::<IpAddr>() {
+        return Some((ip.to_string(), 80));
     }
 
     if let Some(pos) = addr.rfind(':') {
         let (host_part, port_part) = addr.split_at(pos);
         let port_part = &port_part[1..]; // 去掉冒号
 
-        let host_part = host_part.trim_start_matches('[').trim_end_matches(']');
+        let host = host_part.trim_start_matches('[').trim_end_matches(']');
 
-        if let Ok(ip) = host_part.parse() {
-            if port_part.is_empty() {
-                return Some((ip, 80));
-            }
-            if let Ok(port) = port_part.parse() {
-                return Some((ip, port));
-            }
+        if port_part.is_empty() {
+            return Some((host.to_string(), 80));
         }
+
+        if let Ok(port) = port_part.parse::<u16>() {
+            return Some((host.to_string(), port));
+        }
+
+        return Some((host.to_string(), 80));
     }
 
-    None
+    Some((addr.to_string(), 80))
 }
 
 pub async fn ping_target(utf8_str: &str) -> Result<PingEventCallback, String> {
