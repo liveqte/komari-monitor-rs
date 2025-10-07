@@ -58,7 +58,7 @@ pub async fn handle_callbacks(
                         async move {
                             if let Err(e) = exec_command(
                                 &utf8_cloned_for_exec,
-                                &exec_callback_url,
+                                exec_callback_url,
                                 &ignore_unsafe_cert,
                             )
                             .await

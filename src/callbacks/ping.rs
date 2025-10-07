@@ -120,9 +120,23 @@ pub async fn ping_target(utf8_str: &str) -> Result<PingEventCallback, String> {
         }
         "http" => {
             let start_time = Instant::now();
+
+            #[cfg(feature = "ureq-support")]
             let result = ureq::get(&ping_event.ping_target) // 避免克隆
                 .header("User-Agent", "curl/11.45.14")
                 .call()
+                .is_ok();
+            #[cfg(feature = "nyquest-support")]
+            let result = nyquest::ClientBuilder::default()
+                .request_timeout(Duration::from_secs(10))
+                .build_async()
+                .await
+                .unwrap()
+                .request(
+                    nyquest::Request::get(ping_event.ping_target)
+                        .with_header("User-Agent", "curl/11.45.14"),
+                )
+                .await
                 .is_ok();
 
             let now = OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());

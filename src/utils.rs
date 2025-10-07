@@ -112,3 +112,34 @@ pub async fn connect_ws(
             .map_err(|_| "无法创立 WebSocket 连接".to_string())
     }
 }
+
+#[cfg(feature = "ureq-support")]
+pub fn create_ureq_agent(disable_verification: bool) -> ureq::Agent {
+    let config = ureq::Agent::config_builder()
+        .tls_config(
+            ureq::tls::TlsConfig::builder()
+                .disable_verification(disable_verification)
+                .build(),
+        )
+        .timeout_global(Some(Duration::from_secs(10)))
+        .build();
+    config.new_agent()
+}
+
+#[cfg(feature = "nyquest-support")]
+pub async fn create_nyquest_client(disable_verification: bool) -> nyquest::AsyncClient {
+    let config = nyquest::ClientBuilder::default()
+        .request_timeout(Duration::from_secs(10))
+        .no_caching()
+        .no_cookies()
+        .user_agent("nyquest/0.3.0-komari-agent-rs");
+    if disable_verification {
+        config
+            .dangerously_ignore_certificate_errors()
+            .build_async()
+            .await
+            .unwrap()
+    } else {
+        config.build_async().await.unwrap()
+    }
+}

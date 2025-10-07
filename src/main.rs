@@ -1,5 +1,8 @@
 #![warn(clippy::all, clippy::pedantic)]
 
+#[cfg(all(feature = "ureq-support", feature = "nyquest-support"))]
+compile_error!("Please enable only one of 'ureq-support' or 'nyquest-support' features.");
+
 use crate::callbacks::handle_callbacks;
 use crate::command_parser::Args;
 use crate::data_struct::{BasicInfo, RealTimeInfo};
@@ -17,14 +20,11 @@ use tokio::time::sleep;
 use tokio_tungstenite::tungstenite::{Message, Utf8Bytes};
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
+mod callbacks;
 mod command_parser;
 mod data_struct;
-mod rustls_config;
-
-mod callbacks;
 mod get_info;
-#[cfg(target_os = "linux")]
-mod netlink;
+mod rustls_config;
 mod utils;
 
 #[tokio::main]
@@ -32,6 +32,9 @@ async fn main() {
     let args = Args::par();
 
     init_logger(&args.log_level);
+
+    #[cfg(feature = "nyquest-support")]
+    nyquest_preset::register();
 
     let connection_urls = build_urls(&args.http_server, &args.ws_server, &args.token).unwrap();
 
@@ -88,7 +91,10 @@ async fn main() {
         let basic_info = BasicInfo::build(&sysinfo_sys, args.fake, &args.ip_provider).await;
 
         basic_info
-            .push(&connection_urls.basic_info_url, args.ignore_unsafe_cert)
+            .push(
+                connection_urls.basic_info_url.clone(),
+                args.ignore_unsafe_cert,
+            )
             .await;
 
         loop {

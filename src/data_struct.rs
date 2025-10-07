@@ -1,12 +1,12 @@
 use crate::command_parser::IpProvider;
-use crate::{
-    get_info::{
-        arch, cpu_info_without_usage, ip, mem_info_without_usage, os, realtime_connections,
-        realtime_cpu, realtime_disk, realtime_load, realtime_mem, realtime_network,
-        realtime_process, realtime_swap, realtime_uptime,
-    },
-    rustls_config::create_ureq_agent,
-};
+
+use crate::get_info::cpu::{arch, cpu_info_without_usage, realtime_cpu};
+use crate::get_info::ip::ip;
+use crate::get_info::load::realtime_load;
+use crate::get_info::mem::{mem_info_without_usage, realtime_disk, realtime_mem, realtime_swap};
+use crate::get_info::network::{realtime_connections, realtime_network};
+use crate::get_info::os::os;
+use crate::get_info::{realtime_process, realtime_uptime};
 use log::{debug, error, info};
 use miniserde::{Deserialize, Serialize};
 use sysinfo::{Disks, Networks};
@@ -63,26 +63,52 @@ impl BasicInfo {
         basic_info
     }
 
-    pub async fn push(&self, basic_info_url: &str, ignore_unsafe_cert: bool) -> () {
-        let agent = create_ureq_agent(ignore_unsafe_cert);
+    pub async fn push(&self, basic_info_url: String, ignore_unsafe_cert: bool) -> () {
         let json_string = miniserde::json::to_string(self);
-        let resp = agent
-            .post(basic_info_url)
-            .header("User-Agent", "curl/11.45.14-rs")
-            .send(&json_string);
+        #[cfg(feature = "ureq-support")]
+        {
+            use crate::utils::create_ureq_agent;
+            let agent = create_ureq_agent(ignore_unsafe_cert);
+            let resp = agent
+                .post(basic_info_url)
+                .header("User-Agent", "curl/11.45.14-rs")
+                .send(&json_string);
 
-        let resp = match resp {
-            Ok(resp) => resp,
-            Err(e) => {
-                error!("推送 Basic Info 错误: {e}");
-                return;
+            let resp = match resp {
+                Ok(resp) => resp,
+                Err(e) => {
+                    error!("推送 Basic Info 错误: {e}");
+                    return;
+                }
+            };
+
+            if resp.status().is_success() {
+                info!("推送 Basic Info 成功");
+            } else {
+                error!("推送 Basic Info 失败，HTTP 状态码: {}", resp.status());
             }
-        };
+        }
+        #[cfg(feature = "nyquest-support")]
+        {
+            use crate::utils::create_nyquest_client;
+            use nyquest::Body;
+            let client = create_nyquest_client(ignore_unsafe_cert).await;
+            let request = nyquest::Request::post(basic_info_url)
+                .with_body(Body::text(json_string, "application/json"));
 
-        if resp.status().is_success() {
-            info!("推送 Basic Info 成功");
-        } else {
-            error!("推送 Basic Info 失败，HTTP 状态码: {}", resp.status());
+            let resp = match client.request(request).await {
+                Ok(resp) => resp,
+                Err(e) => {
+                    error!("推送 Basic Info 错误: {e}");
+                    return;
+                }
+            };
+
+            if resp.status().is_successful() {
+                info!("推送 Basic Info 成功");
+            } else {
+                error!("推送 Basic Info 失败，HTTP 状态码: {}", resp.status());
+            }
         }
     }
 }

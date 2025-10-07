@@ -3,7 +3,6 @@ use rustls::{ClientConfig, DigitallySignedStruct, DistinguishedName, Error, Sign
 use rustls_pki_types::{CertificateDer, ServerName, UnixTime};
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
-use std::time::Duration;
 
 struct NoVerification;
 
@@ -77,16 +76,4 @@ pub fn create_dangerous_config() -> ClientConfig {
         .dangerous()
         .with_custom_certificate_verifier(verifier)
         .with_no_client_auth()
-}
-
-pub fn create_ureq_agent(disable_verification: bool) -> ureq::Agent {
-    let config = ureq::Agent::config_builder()
-        .tls_config(
-            ureq::tls::TlsConfig::builder()
-                .disable_verification(disable_verification)
-                .build(),
-        )
-        .timeout_global(Some(Duration::from_secs(10)))
-        .build();
-    config.new_agent()
 }

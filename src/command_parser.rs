@@ -1,4 +1,3 @@
-use crate::get_info::DURATION;
 use clap::{Parser, ValueEnum};
 use std::fmt::{Display, Formatter};
 use std::fs;
@@ -108,7 +107,7 @@ impl Args {
     pub fn par() -> Self {
         let mut args = Self::parse();
         unsafe {
-            DURATION = args.realtime_info_interval as f64;
+            crate::get_info::network::DURATION = args.realtime_info_interval as f64;
         }
         if args.terminal_entry == "default" {
             args.terminal_entry = {

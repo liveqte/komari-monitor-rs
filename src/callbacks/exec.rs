@@ -4,8 +4,6 @@ use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 use tokio::process::Command;
 
-use crate::rustls_config::create_ureq_agent;
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RemoteExec {
     message: String,
@@ -24,7 +22,7 @@ pub struct RemoteExecCallback {
 // 直接接收字符串而不是结构体，避免重复解析
 pub async fn exec_command(
     utf8_str: &str,
-    callback_url: &str,
+    callback_url: String,
     ignore_unsafe_cert: &bool,
 ) -> Result<(), String> {
     let remote_exec: RemoteExec =
@@ -67,17 +65,38 @@ pub async fn exec_command(
         finished_at,
     };
 
-    let agent = create_ureq_agent(*ignore_unsafe_cert);
-
-    // 使用更少的内存方式发送请求
     let json_string = json::to_string(&reply);
-    if let Ok(req) = agent.post(callback_url).send(&json_string) {
-        if req.status().is_success() {
-            Ok(())
+    #[cfg(feature = "ureq-support")]
+    {
+        use crate::utils::create_ureq_agent;
+        let agent = create_ureq_agent(*ignore_unsafe_cert);
+        if let Ok(req) = agent.post(callback_url).send(&json_string) {
+            if req.status().is_success() {
+                Ok(())
+            } else {
+                Err("server returned a error".to_string())
+            }
         } else {
-            Err("server returned a error".to_string())
+            Err("Unable to connect server".to_string())
         }
-    } else {
-        Err("Unable to connect server".to_string())
+    }
+
+    #[cfg(feature = "nyquest-support")]
+    {
+        use crate::utils::create_nyquest_client;
+        use nyquest::Body;
+        let client = create_nyquest_client(*ignore_unsafe_cert).await;
+        let request = nyquest::Request::post(callback_url)
+            .with_body(Body::text(json_string, "application/json"));
+        match client.request(request).await {
+            Ok(response) => {
+                if response.status() == 200 {
+                    Ok(())
+                } else {
+                    Err("server returned a error".to_string())
+                }
+            }
+            Err(e) => Err(format!("Unable to connect server: {e}")),
+        }
     }
 }
