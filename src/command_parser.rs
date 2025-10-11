@@ -1,10 +1,8 @@
-use clap::{Parser, ValueEnum};
-use std::fmt::{Display, Formatter};
+use palc::{Parser, ValueEnum};
 use std::fs;
 
-/// Komari Monitor Agent
 #[derive(Parser, Debug, Clone)]
-#[command(version, about, long_about = None)]
+#[command(version, long_about = "komari-monitor-rs is a third-party high-performance monitoring agent for the komari monitoring service.")]
 pub struct Args {
     /// 设置主端 Http 地址
     #[arg(long)]
@@ -59,48 +57,23 @@ fn ip_provider() -> IpProvider {
     IpProvider::Ipinfo
 }
 
-#[derive(Parser, Debug, Clone, ValueEnum)]
+#[derive(Debug, Clone, ValueEnum)]
 pub enum IpProvider {
     Cloudflare,
     Ipinfo,
-}
-
-impl Display for IpProvider {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            IpProvider::Cloudflare => write!(f, "cloudflare"),
-            IpProvider::Ipinfo => write!(f, "ipinfo"),
-        }
-    }
 }
 
 fn log_level() -> LogLevel {
     LogLevel::Info
 }
 
-#[derive(Parser, Debug, Clone, ValueEnum)]
+#[derive(Debug, Clone, ValueEnum)]
 pub enum LogLevel {
     Error,
     Warn,
     Info,
     Debug,
     Trace,
-}
-
-impl Display for LogLevel {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                LogLevel::Error => "error",
-                LogLevel::Warn => "warn",
-                LogLevel::Info => "info",
-                LogLevel::Debug => "debug",
-                LogLevel::Trace => "trace",
-            }
-        )
-    }
 }
 
 impl Args {
