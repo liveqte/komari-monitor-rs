@@ -113,7 +113,7 @@ pub async fn ping_target(utf8_str: &str) -> Result<PingEventCallback, String> {
                     type_str: String::from("ping_result"),
                     task_id: ping_event.ping_task_id,
                     ping_type: String::from("tcp"),
-                    value: None,
+                    value: Some(-1),
                     finished_at,
                 })
             }
@@ -155,7 +155,7 @@ pub async fn ping_target(utf8_str: &str) -> Result<PingEventCallback, String> {
                     type_str: String::from("ping_result"),
                     task_id: ping_event.ping_task_id,
                     ping_type: String::from("http"),
-                    value: None,
+                    value: Some(-1),
                     finished_at,
                 })
             }
@@ -218,7 +218,7 @@ pub fn icmp_ipv4(ip: Ipv4Addr, task_id: u64) -> Result<PingEventCallback, String
             type_str: String::from("ping_result"),
             task_id,
             ping_type: String::from("icmp"),
-            value: None,
+            value: Some(-1),
             finished_at,
         });
     }
@@ -233,7 +233,7 @@ pub fn icmp_ipv4(ip: Ipv4Addr, task_id: u64) -> Result<PingEventCallback, String
             type_str: String::from("ping_result"),
             task_id,
             ping_type: String::from("icmp"),
-            value: None,
+            value: Some(-1),
             finished_at,
         });
     };
@@ -261,7 +261,7 @@ pub fn icmp_ipv4(ip: Ipv4Addr, task_id: u64) -> Result<PingEventCallback, String
             type_str: String::from("ping_result"),
             task_id,
             ping_type: String::from("icmp"),
-            value: None,
+            value: Some(-1),
             finished_at,
         })
     }
@@ -298,7 +298,7 @@ pub fn icmp_ipv6(ip: Ipv6Addr, task_id: u64) -> Result<PingEventCallback, String
             type_str: String::from("ping_result"),
             task_id,
             ping_type: String::from("icmp"),
-            value: None,
+            value: Some(-1),
             finished_at,
         });
     }
@@ -313,7 +313,7 @@ pub fn icmp_ipv6(ip: Ipv6Addr, task_id: u64) -> Result<PingEventCallback, String
             type_str: String::from("ping_result"),
             task_id,
             ping_type: String::from("icmp"),
-            value: None,
+            value: Some(-1),
             finished_at,
         });
     };
@@ -341,7 +341,7 @@ pub fn icmp_ipv6(ip: Ipv6Addr, task_id: u64) -> Result<PingEventCallback, String
             type_str: String::from("ping_result"),
             task_id,
             ping_type: String::from("icmp"),
-            value: None,
+            value: Some(-1),
             finished_at,
         })
     }
