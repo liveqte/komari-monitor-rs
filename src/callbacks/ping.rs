@@ -6,6 +6,7 @@ use miniserde::{Deserialize, Serialize};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
 use std::time::Duration;
+use log::{debug, warn};
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 use tokio::net::TcpStream;
@@ -67,11 +68,17 @@ pub async fn ping_target(utf8_str: &str) -> Result<PingEventCallback, String> {
             }
 
             match get_ip_from_string(&ping_event.ping_target).await {
-                Ok(ip) => match ip {
-                    IpAddr::V4(ip) => icmp_ipv4(ip, ping_event.ping_task_id),
-                    IpAddr::V6(ip) => icmp_ipv6(ip, ping_event.ping_task_id),
+                Ok(ip) => {
+                    debug!("DNS 解析: {}: {}", ping_event.ping_target, ip);
+                    match ip {
+                        IpAddr::V4(ip) => icmp_ipv4(ip, ping_event.ping_task_id),
+                        IpAddr::V6(ip) => icmp_ipv6(ip, ping_event.ping_task_id),
+                    }
                 },
-                Err(_) => Err(String::from("无法解析 IP 地址")),
+                Err(e) => {
+                    warn!("DNS 解析失败: {}: {}", ping_event.ping_target, e);
+                    Err(String::from("无法解析 IP 地址"))
+                },
             }
         }
         "tcp" => {
