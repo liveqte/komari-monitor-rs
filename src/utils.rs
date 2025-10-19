@@ -25,15 +25,15 @@ pub fn init_logger(log_level: &LogLevel) {
 
 #[derive(Debug, Clone)]
 pub struct ConnectionUrls {
-    pub basic_info_url: String,
-    pub exec_callback_url: String,
-    pub ws_terminal_url: String,
-    pub ws_real_time_url: String,
+    pub basic_info: String,
+    pub exec_callback: String,
+    pub ws_terminal: String,
+    pub ws_real_time: String,
 }
 
 pub fn build_urls(
     http_server: &str,
-    ws_server: &Option<String>,
+    ws_server: Option<&String>,
     token: &str,
 ) -> Result<ConnectionUrls, ParseError> {
     // 1. 构造 http_url_base
@@ -61,10 +61,10 @@ pub fn build_urls(
     let ws_real_time_url = format!("{ws_url_base}/api/clients/report?token={token}");
 
     let connection_urls = ConnectionUrls {
-        basic_info_url,
-        exec_callback_url,
-        ws_terminal_url,
-        ws_real_time_url,
+        basic_info: basic_info_url,
+        exec_callback: exec_callback_url,
+        ws_terminal: ws_terminal_url,
+        ws_real_time: ws_real_time_url,
     };
 
     info!("URL 解析成功: {connection_urls:?}");
@@ -124,22 +124,4 @@ pub fn create_ureq_agent(disable_verification: bool) -> ureq::Agent {
         .timeout_global(Some(Duration::from_secs(10)))
         .build();
     config.new_agent()
-}
-
-#[cfg(feature = "nyquest-support")]
-pub async fn create_nyquest_client(disable_verification: bool) -> nyquest::AsyncClient {
-    let config = nyquest::ClientBuilder::default()
-        .request_timeout(Duration::from_secs(10))
-        .no_caching()
-        .no_cookies()
-        .user_agent("nyquest/0.3.0-komari-agent-rs");
-    if disable_verification {
-        config
-            .dangerously_ignore_certificate_errors()
-            .build_async()
-            .await
-            .unwrap()
-    } else {
-        config.build_async().await.unwrap()
-    }
 }

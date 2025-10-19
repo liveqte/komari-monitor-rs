@@ -1,4 +1,5 @@
 use futures::{SinkExt, StreamExt};
+use log::{error, info};
 use miniserde::{Deserialize, Serialize};
 use portable_pty::{CommandBuilder, NativePtySystem, PtySize, PtySystem};
 use std::io::{Read, Write};
@@ -61,10 +62,9 @@ where
         .spawn_command(cmd)
         .map_err(|e| format!("无法启动进程: {e}"))?;
 
-    println!("在 PTY 中启动了终端, PID: {:?}", child.process_id());
+    info!("在 PTY 中启动了终端, PID: {:?}", child.process_id());
 
     let (ws_sender, mut ws_receiver) = ws_stream.split();
-
     let (pty_to_ws_tx, mut pty_to_ws_rx) = mpsc::unbounded_channel::<Vec<u8>>();
 
     task::spawn_blocking(move || {
@@ -73,12 +73,12 @@ where
             match pty_reader.read(&mut buffer) {
                 Ok(count) if count > 0 => {
                     if pty_to_ws_tx.send(buffer[..count].to_vec()).is_err() {
-                        println!("PTY reader: WebSocket端已关闭，停止读取。");
+                        info!("PTY reader: WebSocket端已关闭，停止读取。");
                         break;
                     }
                 }
                 Ok(_) | Err(_) => {
-                    println!("PTY reader: PTY 已关闭，停止读取。");
+                    info!("PTY reader: PTY 已关闭，停止读取。");
                     break;
                 }
             }
@@ -93,7 +93,7 @@ where
                 .await
                 .is_err()
             {
-                println!("发送数据到 WebSocket 失败");
+                error!("发送数据到 WebSocket 失败");
                 break;
             }
         }
@@ -104,7 +104,7 @@ where
             match result {
                 Ok(msg) => match handle_ws_message(msg, &pty_writer) {
                     Err(e) => {
-                        println!("处理 WebSocket 消息失败: {e}");
+                        error!("处理 WebSocket 消息失败: {e}");
                         break;
                     }
                     Ok(Some(resize)) => {
@@ -114,13 +114,13 @@ where
                             pixel_width: 0,
                             pixel_height: 0,
                         }) {
-                            println!("无法调整 PTY 大小: {e}");
+                            error!("无法调整 PTY 大小: {e}");
                         }
                     }
                     _ => {}
                 },
                 Err(e) => {
-                    println!("从 WebSocket 接收消息时出错: {e}");
+                    error!("从 WebSocket 接收消息时出错: {e}");
                     break;
                 }
             }
@@ -128,16 +128,16 @@ where
     });
 
     tokio::select! {
-        _ = pty_to_ws_task => println!("PTY -> WebSocket 任务结束。"),
-        _ = ws_to_pty_task => println!("WebSocket -> PTY 任务结束。"),
+        _ = pty_to_ws_task => info!("PTY -> WebSocket 任务结束。"),
+        _ = ws_to_pty_task => info!("WebSocket -> PTY 任务结束。"),
     }
 
-    println!("正在关闭会话，终止子进程...");
+    info!("正在关闭会话，终止子进程...");
     if let Err(e) = child.kill() {
-        println!("终止子进程失败: {e}");
+        error!("终止子进程失败: {e}");
     }
     child.wait().map_err(|e| format!("无法终止子线程: {e}"))?;
-    println!("会话已成功关闭。");
+    info!("会话已成功关闭。");
 
     Ok(())
 }

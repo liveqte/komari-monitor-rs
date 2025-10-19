@@ -2,11 +2,11 @@ use icmp_socket::packet::WithEchoRequest;
 use icmp_socket::{
     IcmpSocket, IcmpSocket4, IcmpSocket6, Icmpv4Message, Icmpv4Packet, Icmpv6Message, Icmpv6Packet,
 };
+use log::{debug, warn};
 use miniserde::{Deserialize, Serialize};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
 use std::time::Duration;
-use log::{debug, warn};
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 use tokio::net::TcpStream;
@@ -31,9 +31,9 @@ pub struct PingEventCallback {
     pub finished_at: String,
 }
 
-fn split_address(addr: &str) -> Option<(String, u16)> {
+fn split_address(addr: &str) -> (String, u16) {
     if let Ok(ip) = addr.parse::<IpAddr>() {
-        return Some((ip.to_string(), 80));
+        return (ip.to_string(), 80);
     }
 
     if let Some(pos) = addr.rfind(':') {
@@ -43,17 +43,17 @@ fn split_address(addr: &str) -> Option<(String, u16)> {
         let host = host_part.trim_start_matches('[').trim_end_matches(']');
 
         if port_part.is_empty() {
-            return Some((host.to_string(), 80));
+            return (host.to_string(), 80);
         }
 
         if let Ok(port) = port_part.parse::<u16>() {
-            return Some((host.to_string(), port));
+            return (host.to_string(), port);
         }
 
-        return Some((host.to_string(), 80));
+        return (host.to_string(), 80);
     }
 
-    Some((addr.to_string(), 80))
+    (addr.to_string(), 80)
 }
 
 pub async fn ping_target(utf8_str: &str) -> Result<PingEventCallback, String> {
@@ -74,22 +74,17 @@ pub async fn ping_target(utf8_str: &str) -> Result<PingEventCallback, String> {
                         IpAddr::V4(ip) => icmp_ipv4(ip, ping_event.ping_task_id),
                         IpAddr::V6(ip) => icmp_ipv6(ip, ping_event.ping_task_id),
                     }
-                },
+                }
                 Err(e) => {
                     warn!("DNS 解析失败: {}: {}", ping_event.ping_target, e);
                     Err(String::from("无法解析 IP 地址"))
-                },
+                }
             }
         }
         "tcp" => {
             let start_time = Instant::now();
 
-            let (ip, port) = match split_address(&ping_event.ping_target) {
-                None => {
-                    return Err(String::from("无法解析 IP 地址"));
-                }
-                Some(split) => split,
-            };
+            let (ip, port) = split_address(&ping_event.ping_target);
 
             let ping = match tokio::time::timeout(
                 Duration::from_secs(10),
@@ -132,18 +127,6 @@ pub async fn ping_target(utf8_str: &str) -> Result<PingEventCallback, String> {
             let result = ureq::get(&ping_event.ping_target) // 避免克隆
                 .header("User-Agent", "curl/11.45.14")
                 .call()
-                .is_ok();
-            #[cfg(feature = "nyquest-support")]
-            let result = nyquest::ClientBuilder::default()
-                .request_timeout(Duration::from_secs(10))
-                .build_async()
-                .await
-                .unwrap()
-                .request(
-                    nyquest::Request::get(ping_event.ping_target)
-                        .with_header("User-Agent", "curl/11.45.14"),
-                )
-                .await
                 .is_ok();
 
             let now = OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());

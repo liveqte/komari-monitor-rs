@@ -38,9 +38,9 @@ impl BasicInfo {
         let (ip, os) = tokio::join!(ip(ip_provider), os());
 
         let fake_cpu_cores = (f64::from(cpu.cores) * fake) as u64;
-        let fake_disk_total = (mem_disk.disk_total as f64 * fake) as u64;
-        let fake_swap_total = (mem_disk.swap_total as f64 * fake) as u64;
-        let fake_mem_total = (mem_disk.mem_total as f64 * fake) as u64;
+        let fake_disk_total = (mem_disk.disk as f64 * fake) as u64;
+        let fake_swap_total = (mem_disk.swap as f64 * fake) as u64;
+        let fake_mem_total = (mem_disk.mem as f64 * fake) as u64;
 
         let basic_info = Self {
             arch: arch(),
@@ -63,7 +63,7 @@ impl BasicInfo {
         basic_info
     }
 
-    pub async fn push(&self, basic_info_url: String, ignore_unsafe_cert: bool) -> () {
+    pub fn push(&self, basic_info_url: String, ignore_unsafe_cert: bool) {
         let json_string = miniserde::json::to_string(self);
         #[cfg(feature = "ureq-support")]
         {
@@ -83,28 +83,6 @@ impl BasicInfo {
             };
 
             if resp.status().is_success() {
-                info!("推送 Basic Info 成功");
-            } else {
-                error!("推送 Basic Info 失败，HTTP 状态码: {}", resp.status());
-            }
-        }
-        #[cfg(feature = "nyquest-support")]
-        {
-            use crate::utils::create_nyquest_client;
-            use nyquest::Body;
-            let client = create_nyquest_client(ignore_unsafe_cert).await;
-            let request = nyquest::Request::post(basic_info_url)
-                .with_body(Body::text(json_string, "application/json"));
-
-            let resp = match client.request(request).await {
-                Ok(resp) => resp,
-                Err(e) => {
-                    error!("推送 Basic Info 错误: {e}");
-                    return;
-                }
-            };
-
-            if resp.status().is_successful() {
                 info!("推送 Basic Info 成功");
             } else {
                 error!("推送 Basic Info 失败，HTTP 状态码: {}", resp.status());

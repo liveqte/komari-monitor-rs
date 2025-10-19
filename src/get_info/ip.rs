@@ -21,6 +21,11 @@ pub struct IPInfo {
     pub ipv6: Option<Ipv6Addr>,
 }
 
+#[derive(Serialize, Deserialize)]
+struct IpJson {
+    ip: String,
+}
+
 pub async fn ip_ipinfo() -> IPInfo {
     let ipv4: JoinHandle<Option<Ipv4Addr>> = tokio::spawn(async move {
         #[cfg(feature = "ureq-support")]
@@ -42,14 +47,6 @@ pub async fn ip_ipinfo() -> IPInfo {
 
             body
         };
-
-        #[cfg(feature = "nyquest-support")]
-        let body = { String::new() };
-
-        #[derive(Serialize, Deserialize)]
-        struct IpJson {
-            ip: String,
-        }
 
         let json: IpJson = match json::from_str(&body) {
             Err(_) => {
@@ -80,14 +77,6 @@ pub async fn ip_ipinfo() -> IPInfo {
             };
             body
         };
-
-        #[cfg(feature = "nyquest-support")]
-        let body = { String::new() };
-
-        #[derive(Serialize, Deserialize)]
-        struct IpJson {
-            ip: String,
-        }
 
         let json: IpJson = match json::from_str(&body) {
             Err(_) => {
@@ -130,9 +119,6 @@ pub async fn ip_cloudflare() -> IPInfo {
             body
         };
 
-        #[cfg(feature = "nyquest-support")]
-        let body = { String::new() };
-
         let mut ip = String::new();
 
         for line in body.lines() {
@@ -164,9 +150,6 @@ pub async fn ip_cloudflare() -> IPInfo {
             };
             body
         };
-
-        #[cfg(feature = "nyquest-support")]
-        let body = { String::new() };
 
         let mut ip = String::new();
 

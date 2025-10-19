@@ -22,11 +22,14 @@ struct Msg {
     message: String,
 }
 
+type Reader = SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>;
+type LockedWriter = Arc<Mutex<SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>>>;
+
 pub async fn handle_callbacks(
     args: &Args,
     connection_urls: &ConnectionUrls,
-    reader: &mut SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
-    locked_writer: &Arc<Mutex<SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>>>,
+    reader: &mut Reader,
+    locked_writer: &LockedWriter,
 ) -> () {
     while let Some(msg) = reader.next().await {
         let Ok(msg) = msg else {
@@ -52,7 +55,7 @@ pub async fn handle_callbacks(
                 if args.terminal {
                     tokio::spawn({
                         let utf8_cloned_for_exec = utf8_cloned.clone();
-                        let exec_callback_url = connection_urls.exec_callback_url.clone();
+                        let exec_callback_url = connection_urls.exec_callback.clone();
                         let ignore_unsafe_cert = args.ignore_unsafe_cert;
 
                         async move {
@@ -95,7 +98,7 @@ pub async fn handle_callbacks(
 
             "terminal" => {
                 if args.terminal {
-                    let ws_terminal_url = connection_urls.clone().ws_terminal_url.clone();
+                    let ws_terminal_url = connection_urls.clone().ws_terminal.clone();
                     let args = args.clone();
                     let utf8_cloned = utf8_cloned.clone();
 

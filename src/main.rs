@@ -1,13 +1,18 @@
 #![warn(clippy::all, clippy::pedantic)]
-
-#[cfg(all(feature = "ureq-support", feature = "nyquest-support"))]
-compile_error!("Please enable only one of 'ureq-support' or 'nyquest-support' features.");
+#![allow(
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss,
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation,
+    clippy::similar_names,
+    clippy::too_many_lines,
+)]
 
 use crate::callbacks::handle_callbacks;
 use crate::command_parser::Args;
 use crate::data_struct::{BasicInfo, RealTimeInfo};
 use crate::utils::{build_urls, connect_ws, init_logger};
-use futures::stream::{SplitSink, SplitStream};
+use futures::stream::SplitSink;
 use futures::{SinkExt, StreamExt};
 use log::{error, info};
 use miniserde::json;
@@ -33,30 +38,25 @@ async fn main() {
 
     init_logger(&args.log_level);
 
-    #[cfg(feature = "nyquest-support")]
-    nyquest_preset::register();
-
-    let connection_urls = build_urls(&args.http_server, &args.ws_server, &args.token).unwrap();
+    let connection_urls =
+        build_urls(&args.http_server, args.ws_server.as_ref(), &args.token).unwrap();
 
     info!("成功读取参数: {args:?}");
 
     loop {
         let Ok(ws_stream) = connect_ws(
-            &connection_urls.ws_real_time_url,
+            &connection_urls.ws_real_time,
             args.tls,
             args.ignore_unsafe_cert,
         )
         .await
         else {
-            eprintln!("无法连接到 Websocket 服务器，5 秒后重新尝试");
+            error!("无法连接到 Websocket 服务器，5 秒后重新尝试");
             sleep(Duration::from_secs(5)).await;
             continue;
         };
 
-        let (write, mut read): (
-            SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
-            SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
-        ) = ws_stream.split();
+        let (write, mut read) = ws_stream.split();
 
         let locked_write: Arc<
             Mutex<SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>>,
@@ -90,12 +90,7 @@ async fn main() {
 
         let basic_info = BasicInfo::build(&sysinfo_sys, args.fake, &args.ip_provider).await;
 
-        basic_info
-            .push(
-                connection_urls.basic_info_url.clone(),
-                args.ignore_unsafe_cert,
-            )
-            .await;
+        basic_info.push(connection_urls.basic_info.clone(), args.ignore_unsafe_cert);
 
         loop {
             let start_time = tokio::time::Instant::now();

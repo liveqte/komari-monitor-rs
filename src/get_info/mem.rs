@@ -3,13 +3,13 @@ use log::trace;
 use sysinfo::{Disks, System};
 
 #[derive(Debug)]
-pub struct MemDiskInfoWithOutUsage {
-    pub mem_total: u64,
-    pub swap_total: u64,
-    pub disk_total: u64,
+pub struct MemDiskTotalInfoWithOutUsage {
+    pub mem: u64,
+    pub swap: u64,
+    pub disk: u64,
 }
 
-pub fn mem_info_without_usage(sysinfo_sys: &System) -> MemDiskInfoWithOutUsage {
+pub fn mem_info_without_usage(sysinfo_sys: &System) -> MemDiskTotalInfoWithOutUsage {
     let mem_total = sysinfo_sys.total_memory();
     let swap_total = sysinfo_sys.total_swap();
 
@@ -20,10 +20,10 @@ pub fn mem_info_without_usage(sysinfo_sys: &System) -> MemDiskInfoWithOutUsage {
         all_disk_space += disk.total_space();
     }
 
-    let info = MemDiskInfoWithOutUsage {
-        mem_total,
-        swap_total,
-        disk_total: all_disk_space,
+    let info = MemDiskTotalInfoWithOutUsage {
+        mem: mem_total,
+        swap: swap_total,
+        disk: all_disk_space,
     };
 
     trace!("MEM DISK INFO WITH OUT USAGE 获取成功: {info:?}");

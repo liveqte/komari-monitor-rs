@@ -2,7 +2,10 @@ use palc::{Parser, ValueEnum};
 use std::fs;
 
 #[derive(Parser, Debug, Clone)]
-#[command(version, long_about = "komari-monitor-rs is a third-party high-performance monitoring agent for the komari monitoring service.")]
+#[command(
+    version,
+    long_about = "komari-monitor-rs is a third-party high-performance monitoring agent for the komari monitoring service."
+)]
 pub struct Args {
     /// 设置主端 Http 地址
     #[arg(long)]
