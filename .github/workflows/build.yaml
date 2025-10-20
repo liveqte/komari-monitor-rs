@@ -159,9 +159,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install Lib
-        run: sudo apt update && sudo apt install -y musl-tools musl-dev musl upx
+        run: sudo apt update && sudo apt install -y musl-tools musl-dev musl upx libclang1
       - name: Install Cross
         run: cargo install cross --git https://github.com/cross-rs/cross
+      - name: Install Bindgen-cli
+        run: cargo install --force --locked bindgen-cli
       - name: Build binary
         run: cargo clean && cross build --target ${{ matrix.platform.target }} --features ureq-support --profile minimal --jobs 32 --locked
         env:
