@@ -189,6 +189,20 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Build nyquest binary
+        run: cargo clean && cross build --target ${{ matrix.platform.target }} --features nyquest-support --profile minimal --jobs 32 --locked
+        env:
+          CROSS_NO_WARNINGS: 0
+      - name: Compress binary
+        run: upx --brute target/${{ matrix.platform.target }}/minimal/komari-monitor-rs
+      - name: Rename binary
+        run: cp target/${{ matrix.platform.target }}/minimal/komari-monitor-rs target/${{ matrix.platform.target }}/minimal/${{ matrix.platform.binary_name }}-nyquest
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform.target }}-nyquest
+          path: target/${{ matrix.platform.target }}/minimal/${{ matrix.platform.binary_name }}-nyquest
+
   windows-release:
     runs-on: windows-latest
     steps:
@@ -208,6 +222,29 @@ jobs:
         with:
           files: |
             target/minimal/komari-monitor-rs.exe
+          tag_name: latest # 使用固定的标签名称作为发布版本号
+          body: |
+            Note: All Release operations will publish the Binary and software packages here
+            Latest release for Commit: ${{ github.sha }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cargo Build nyquest
+        run: cargo clean && cargo build --profile minimal --features nyquest-support
+      - name: Rename Binary
+        run: move target/minimal/komari-monitor-rs.exe target/minimal/komari-monitor-rs-nyquest.exe
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-nyquest
+          path: target/minimal/komari-monitor-rs-nyquest.exe
+      - name: Publish to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            target/minimal/komari-monitor-rs-nyquest.exe
           tag_name: latest # 使用固定的标签名称作为发布版本号
           body: |
             Note: All Release operations will publish the Binary and software packages here
@@ -247,6 +284,29 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Cargo Build nyquest
+        run: cargo clean && cargo build --profile minimal --features nyquest-support
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-amd64-nyquest
+          path: target/minimal/komari-monitor-rs
+      - name: Rename Binary
+        run: mv target/minimal/komari-monitor-rs target/minimal/komari-monitor-rs-macos-amd64-nyquest
+      - name: Publish to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            target/minimal/komari-monitor-rs-macos-amd64-nyquest
+          tag_name: latest # 使用固定的标签名称作为发布版本号
+          body: |
+            Note: All Release operations will publish the Binary and software packages here
+            Latest release for Commit: ${{ github.sha }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   macos-arm64-release:
     runs-on: macos-latest
     steps:
@@ -270,6 +330,29 @@ jobs:
         with:
           files: |
             target/minimal/komari-monitor-rs-macos-arm64
+          tag_name: latest # 使用固定的标签名称作为发布版本号
+          body: |
+            Note: All Release operations will publish the Binary and software packages here
+            Latest release for Commit: ${{ github.sha }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cargo Build nyquest
+        run: cargo clean && cargo build --profile minimal --features nyquest-support
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-arm64-nyquest
+          path: target/minimal/komari-monitor-rs
+      - name: Rename Binary
+        run: mv target/minimal/komari-monitor-rs target/minimal/komari-monitor-rs-macos-arm64-nyquest
+      - name: Publish to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            target/minimal/komari-monitor-rs-macos-arm64-nyquest
           tag_name: latest # 使用固定的标签名称作为发布版本号
           body: |
             Note: All Release operations will publish the Binary and software packages here
