@@ -48,6 +48,19 @@ pub async fn ip_ipinfo() -> IPInfo {
             body
         };
 
+        #[cfg(feature = "nyquest-support")]
+        let body = {
+            use nyquest::Request;
+            let client = crate::utils::create_nyquest_client(false);
+            let request = Request::get("https://ipinfo.io");
+
+            if let Ok(res) = client.request(request) {
+                res.text().ok()?
+            } else {
+                return None;
+            }
+        };
+
         let json: IpJson = match json::from_str(&body) {
             Err(_) => {
                 return None;
@@ -76,6 +89,19 @@ pub async fn ip_ipinfo() -> IPInfo {
                 return None;
             };
             body
+        };
+
+        #[cfg(feature = "nyquest-support")]
+        let body = {
+            use nyquest::Request;
+            let client = crate::utils::create_nyquest_client(false);
+            let request = Request::get("https://6.ipinfo.io");
+
+            if let Ok(res) = client.request(request) {
+                res.text().ok()?
+            } else {
+                return None;
+            }
         };
 
         let json: IpJson = match json::from_str(&body) {
@@ -119,6 +145,19 @@ pub async fn ip_cloudflare() -> IPInfo {
             body
         };
 
+        #[cfg(feature = "nyquest-support")]
+        let body = {
+            use nyquest::Request;
+            let client = crate::utils::create_nyquest_client(false);
+            let request = Request::get("https://1.1.1.1/cdn-cgi/trace");
+
+            if let Ok(res) = client.request(request) {
+                res.text().ok()?
+            } else {
+                return None;
+            }
+        };
+
         let mut ip = String::new();
 
         for line in body.lines() {
@@ -149,6 +188,19 @@ pub async fn ip_cloudflare() -> IPInfo {
                 return None;
             };
             body
+        };
+
+        #[cfg(feature = "nyquest-support")]
+        let body = {
+            use nyquest::Request;
+            let client = crate::utils::create_nyquest_client(false);
+            let request = Request::get("https://[2606:4700:4700::1111]/cdn-cgi/trace");
+
+            if let Ok(res) = client.request(request) {
+                res.text().ok()?
+            } else {
+                return None;
+            }
         };
 
         let mut ip = String::new();

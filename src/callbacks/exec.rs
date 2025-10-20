@@ -80,4 +80,23 @@ pub async fn exec_command(
             Err("Unable to connect server".to_string())
         }
     }
+
+    #[cfg(feature = "nyquest-support")]
+    {
+        use nyquest::Body;
+        use nyquest::Request;
+        let client = crate::utils::create_nyquest_client(*ignore_unsafe_cert);
+        let body = Body::text(json_string, "application/json");
+        let request = Request::post(callback_url).with_body(body);
+
+        if let Ok(res) = client.request(request) {
+            if res.status().is_successful() {
+                Ok(())
+            } else {
+                Err("server returned a error".to_string())
+            }
+        } else {
+            Err("Unable to connect server".to_string())
+        }
+    }
 }

@@ -24,18 +24,24 @@ portable-pty = "0.9.0"
 url = { version = "2.5.7", default-features = false, features = ["std"] }
 
 ureq = { version = "3.1.2", default-features = false, features = ["gzip", "rustls"], optional = true}
-
-[features]
-default = ["ureq-support"]
-ureq-support = ["ureq"]
+nyquest = { version = "0.3.0",default-features = false, features = ["blocking"], optional = true }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 raw-cpuid = "11.5.0"
 netstat2 = "0.11.2"
 
+[target.'cfg(not(target_os = "linux"))'.dependencies]
+nyquest-preset = { version = "0.3.0", default-features = false, features = ["blocking"], optional = true }
+
 [target.'cfg(target_os = "linux")'.dependencies]
 heim-virt = "0.1.0-alpha.1"
 libc = "0.2.175"
+nyquest-backend-curl = { version = "0.3.1", default-features = false, features = ["blocking"], optional = true }
+curl = { version = "0.4.49", default-features = false, features = ["rustls"], optional = true }
+
+[features]
+ureq-support = ["ureq"]
+nyquest-support = ["nyquest", "nyquest-backend-curl", "curl", "nyquest-preset"]
 
 [profile]
 dev = { opt-level = 3 }

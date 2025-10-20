@@ -5,7 +5,7 @@
     clippy::cast_precision_loss,
     clippy::cast_possible_truncation,
     clippy::similar_names,
-    clippy::too_many_lines,
+    clippy::too_many_lines
 )]
 
 use crate::callbacks::handle_callbacks;
@@ -37,6 +37,18 @@ async fn main() {
     let args = Args::par();
 
     init_logger(&args.log_level);
+
+    #[cfg(all(feature = "nyquest-support", not(target_os = "linux")))]
+    {
+        nyquest_preset::register();
+        info!("komari-monitor-rs 正在使用 Nyquest 作为 Http Client，该功能暂未稳定，请谨慎使用");
+    }
+
+    #[cfg(all(feature = "nyquest-support", target_os = "linux"))]
+    {
+        nyquest_backend_curl::register();
+        info!("komari-monitor-rs 正在使用 Nyquest 作为 Http Client，该功能暂未稳定，请谨慎使用");
+    }
 
     let connection_urls =
         build_urls(&args.http_server, args.ws_server.as_ref(), &args.token).unwrap();

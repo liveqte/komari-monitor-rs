@@ -88,6 +88,28 @@ impl BasicInfo {
                 error!("推送 Basic Info 失败，HTTP 状态码: {}", resp.status());
             }
         }
+        #[cfg(feature = "nyquest-support")]
+        {
+            use nyquest::Body;
+            use nyquest::Request;
+            let client = crate::utils::create_nyquest_client(ignore_unsafe_cert);
+            let body = Body::text(json_string, "application/json");
+            let resp = client.request(Request::post(basic_info_url).with_body(body));
+
+            let resp = match resp {
+                Ok(resp) => resp,
+                Err(e) => {
+                    error!("推送 Basic Info 错误: {e}");
+                    return;
+                }
+            };
+
+            if resp.status().is_successful() {
+                info!("推送 Basic Info 成功");
+            } else {
+                error!("推送 Basic Info 失败，HTTP 状态码: {}", resp.status());
+            }
+        }
     }
 }
 

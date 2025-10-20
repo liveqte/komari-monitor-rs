@@ -129,6 +129,14 @@ pub async fn ping_target(utf8_str: &str) -> Result<PingEventCallback, String> {
                 .call()
                 .is_ok();
 
+            #[cfg(feature = "nyquest-support")]
+            let result = {
+                use nyquest::Request;
+                let client = crate::utils::create_nyquest_client(false);
+                let request = Request::get(ping_event.ping_target);
+                client.request(request).is_ok()
+            };
+
             let now = OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
             let finished_at = now.format(&Rfc3339).unwrap_or_default();
 

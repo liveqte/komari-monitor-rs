@@ -121,7 +121,19 @@ pub fn create_ureq_agent(disable_verification: bool) -> ureq::Agent {
                 .disable_verification(disable_verification)
                 .build(),
         )
-        .timeout_global(Some(Duration::from_secs(10)))
+        .timeout_global(Some(Duration::from_secs(5)))
         .build();
     config.new_agent()
+}
+
+#[cfg(feature = "nyquest-support")]
+pub fn create_nyquest_client(disable_verification: bool) -> nyquest::BlockingClient {
+    use std::time::Duration;
+    let mut client = nyquest::ClientBuilder::default()
+        .request_timeout(Duration::from_secs(5))
+        .user_agent("curl/8.7.1");
+    if disable_verification {
+        client = client.dangerously_ignore_certificate_errors();
+    }
+    client.build_blocking().unwrap()
 }
