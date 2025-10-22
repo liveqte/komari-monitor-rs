@@ -7,16 +7,13 @@ use std::fs;
     long_about = "komari-monitor-rs is a third-party high-performance monitoring agent for the komari monitoring service."
 )]
 pub struct Args {
-    /// 设置主端 Http 地址
-    #[arg(long)]
+    #[arg(long, env = "HTTP_SERVER")]
     pub http_server: String,
-
-    /// 设置主端 WebSocket 地址
-    #[arg(long)]
+    
+    #[arg(long, env = "WS_SERVER")]
     pub ws_server: Option<String>,
-
-    /// 设置 Token
-    #[arg(short, long, allow_hyphen_values = true)]
+    
+    #[arg(short, long, allow_hyphen_values = true, env = "TOKEN")]
     pub token: String,
 
     /// 公网 IP 接口
