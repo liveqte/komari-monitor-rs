@@ -8,6 +8,7 @@ repository = "https://github.com/GenshinMinecraft/ak_monitor_client_rs"
 license = "WTFPL"
 
 [dependencies]
+clap = { version = "4.4", features = ["derive", "env"] }
 log = { version = "0.4.28", default-features = false, features = ["std"] }
 simple_logger = { version = "5.0.0", features = ["stderr", "time", "colored"] }
 tokio = { version = "1.47.1", default-features = false, features = ["rt-multi-thread", "macros", "time", "process", "sync", "net", "fs"] }
