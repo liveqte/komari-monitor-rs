@@ -3,6 +3,9 @@
 ![](https://hitscounter.dev/api/hit?url=https%3A%2F%2Fgithub.com%2Frsbench%2Frsbench&label=&icon=github&color=%23160d27)
 ![komari-monitor-rs](https://socialify.git.ci/GenshinMinecraft/komari-monitor-rs/image?custom_description=Komari+%E7%AC%AC%E4%B8%89%E6%96%B9+Agent+%7C+%E9%AB%98%E6%80%A7%E8%83%BD&description=1&font=KoHo&forks=1&issues=1&language=1&name=1&owner=1&pattern=Floating+Cogs&pulls=1&stargazers=1&theme=Auto)
 
+## 在原版本上的变动
+- 更改参数解析库有clap以支持环境变量解析
+- 变动文件src/command_parser.rs，Cargo.toml。
 ## 近期更新
 
 - 现已支持自动推断 ws_server 参数，若未设置则自动从 http_server 参数中推断
