@@ -1,4 +1,4 @@
-use clap::{Parser, ValueEnum}; 
+use clap::{Parser, ValueEnum}; // 确保使用的是 clap，不是 palc
 use std::fs;
 
 #[derive(Parser, Debug, Clone)]
@@ -90,7 +90,7 @@ impl Args {
                 if cfg!(windows) {
                     "cmd.exe".to_string()
                 } else if fs::exists("/bin/bash").unwrap_or(false) {
-                    "bash".to_string()
+                    "/bin/bash".to_string()
                 } else {
                     "sh".to_string()
                 }
