@@ -24,8 +24,8 @@ pub struct Args {
     #[arg(long, default_value_t=ip_provider())]
     pub ip_provider: IpProvider,
 
-    /// 启用 Terminal (默认关闭)
-    #[arg(long, default_value_t = false)]
+    /// 启用 Terminal (默认开启)
+    #[arg(long, default_value_t = true)]
     pub terminal: bool,
 
     /// 自定义 Terminal 入口
