@@ -1,4 +1,4 @@
-use palc::{Parser, ValueEnum};
+use clap::{Parser, ValueEnum}; 
 use std::fs;
 
 #[derive(Parser, Debug, Clone)]
@@ -7,13 +7,16 @@ use std::fs;
     long_about = "komari-monitor-rs is a third-party high-performance monitoring agent for the komari monitoring service."
 )]
 pub struct Args {
-    #[arg(long, env = "HTTP_SERVER")]
+    #[arg(long)]
+    #[arg(env = "HTTP_SERVER")]
     pub http_server: String,
     
-    #[arg(long, env = "WS_SERVER")]
+    #[arg(long)]
+    #[arg(env = "WS_SERVER")]
     pub ws_server: Option<String>,
     
-    #[arg(short, long, allow_hyphen_values = true, env = "TOKEN")]
+    #[arg(short, long, allow_hyphen_values = true)]
+    #[arg(env = "TOKEN")]
     pub token: String,
 
     /// 公网 IP 接口
