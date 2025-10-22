@@ -5,7 +5,7 @@
 
 ## 在原版本上的变动
 - 更改参数解析库有clap以支持环境变量解析
-- 变动文件src/command_parser.rs，Cargo.toml。
+- 变动文件为src/command_parser.rs，Cargo.toml。
 ## 近期更新
 
 - 现已支持自动推断 ws_server 参数，若未设置则自动从 http_server 参数中推断
