@@ -1,4 +1,5 @@
-use clap::{Parser, ValueEnum}; // 确保使用的是 clap，不是 palc
+use clap::{Parser, ValueEnum};
+use std::fmt;
 use std::fs;
 
 #[derive(Parser, Debug, Clone)]
@@ -66,6 +67,16 @@ pub enum IpProvider {
     Ipinfo,
 }
 
+// 为 IpProvider 实现 Display trait
+impl fmt::Display for IpProvider {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            IpProvider::Cloudflare => write!(f, "cloudflare"),
+            IpProvider::Ipinfo => write!(f, "ipinfo"),
+        }
+    }
+}
+
 fn log_level() -> LogLevel {
     LogLevel::Info
 }
@@ -79,6 +90,19 @@ pub enum LogLevel {
     Trace,
 }
 
+// 为 LogLevel 实现 Display trait
+impl fmt::Display for LogLevel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LogLevel::Error => write!(f, "error"),
+            LogLevel::Warn => write!(f, "warn"),
+            LogLevel::Info => write!(f, "info"),
+            LogLevel::Debug => write!(f, "debug"),
+            LogLevel::Trace => write!(f, "trace"),
+        }
+    }
+}
+
 impl Args {
     pub fn par() -> Self {
         let mut args = Self::parse();
@@ -89,7 +113,7 @@ impl Args {
             args.terminal_entry = {
                 if cfg!(windows) {
                     "cmd.exe".to_string()
-                } else if fs::exists("/bin/bash").unwrap_or(false) {
+                } else if fs::metadata("/bin/bash").is_ok() {
                     "/bin/bash".to_string()
                 } else {
                     "sh".to_string()
