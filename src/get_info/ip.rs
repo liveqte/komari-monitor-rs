@@ -30,7 +30,7 @@ pub async fn ip_ipinfo() -> IPInfo {
     let ipv4: JoinHandle<Option<Ipv4Addr>> = tokio::spawn(async move {
         #[cfg(feature = "ureq-support")]
         let body = {
-            let Ok(mut resp) = ureq::get("https://ipinfo.io")
+            let Ok(mut resp) = ureq::get("https://api.myip.com")
                 .header("User-Agent", "curl/8.7.1")
                 .config()
                 .timeout_global(Some(Duration::from_secs(5)))
@@ -74,7 +74,7 @@ pub async fn ip_ipinfo() -> IPInfo {
     let ipv6: JoinHandle<Option<Ipv6Addr>> = tokio::spawn(async move {
         #[cfg(feature = "ureq-support")]
         let body = {
-            let Ok(mut resp) = ureq::get("https://6.ipinfo.io")
+            let Ok(mut resp) = ureq::get("https://v6.myip.la/json")
                 .header("User-Agent", "curl/8.7.1")
                 .config()
                 .timeout_global(Some(Duration::from_secs(5)))
