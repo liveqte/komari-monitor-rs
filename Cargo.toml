@@ -1,6 +1,6 @@
 [package]
 name = "komari-monitor-rs"
-version = "0.2.7"
+version = "0.2.8"
 edition = "2024"
 authors = ["GenshinMinecrat <gm@highp.ing>"]
 description = "Komari Monitor Agent in Rust"
@@ -9,13 +9,13 @@ license = "WTFPL"
 
 [dependencies]
 clap = { version = "4.4", features = ["derive", "env"] }
-log = { version = "0.4.28", default-features = false, features = ["std"] }
-simple_logger = { version = "5.0.0", features = ["stderr", "time", "colored"] }
-tokio = { version = "1.47.1", default-features = false, features = ["rt-multi-thread", "macros", "time", "process", "sync", "net", "fs"] }
-rustls = { version = "0.23.32", default-features = false, features = ["ring"] }
-rustls-pki-types = "1.12.0"
-futures = { version = "0.3.31", default-features = false, features = ["std"] }
-miniserde = { version = "0.1.42", default-features = false, features = ["std"] }
+log = { version = "0.4", default-features = false, features = ["std"] }
+simple_logger = { version = "5", features = ["stderr", "time", "colored"] }
+tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "macros", "time", "process", "sync", "net", "fs"] }
+rustls = { version = "0.23", default-features = false, features = ["ring"] }
+rustls-pki-types = "1"
+futures = { version = "0.3", default-features = false, features = ["std"] }
+miniserde = { version = "0.1", default-features = false, features = ["std"] }
 tokio-tungstenite = { version = "0.28.0", default-features = false, features = ["rustls-tls-webpki-roots", "connect"] }
 palc = { version = "0.0.2", default-features = false, features = ["help"] }
 sysinfo = { version = "0.37.2", default-features = false, features = ["disk", "system", "multithread", "network"] }
@@ -24,15 +24,15 @@ icmp-socket = "0.2.0"
 portable-pty = "0.9.0"
 url = { version = "2.5.7", default-features = false, features = ["std"] }
 
-ureq = { version = "3.1.2", default-features = false, features = ["gzip", "rustls"], optional = true}
-nyquest = { version = "0.3.0",default-features = false, features = ["blocking"], optional = true }
+ureq = { version = "3.1", default-features = false, features = ["gzip", "rustls"], optional = true}
+nyquest = { version = "0.3",default-features = false, features = ["blocking"], optional = true }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 raw-cpuid = "11.5.0"
 netstat2 = "0.11.2"
 
 [target.'cfg(not(target_os = "linux"))'.dependencies]
-nyquest-preset = { version = "0.3.0", default-features = false, features = ["blocking"], optional = true }
+nyquest-preset = { version = "0.3", default-features = false, features = ["blocking"], optional = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 heim-virt = "0.1.0-alpha.1"
@@ -45,7 +45,29 @@ rustls-ffi = { version = "0.15.0", default-features = false, features = ["ring"]
 ureq-support = ["ureq"]
 nyquest-support = ["nyquest", "nyquest-backend-curl", "curl", "nyquest-preset", "rustls-ffi"]
 
+# Default Dev Profile
+[profile.dev]
+opt-level = 0
+debug = true
+debug-assertions = true
+overflow-checks = true
+lto = false
+panic = 'unwind'
+incremental = true
+codegen-units = 256
+rpath = false
+
+# Default Release Profile
+[profile.release]
+opt-level = 3
+debug = false
+debug-assertions = false
+overflow-checks = false
+lto = false
+panic = 'unwind'
+incremental = false
+codegen-units = 16
+rpath = false
+
 [profile]
-dev = { opt-level = 3 }
-release = { opt-level = 3, lto = true, codegen-units = 1, panic = "abort" }
 minimal = { inherits = "release", opt-level = "z", lto = true, codegen-units = 1, panic = "abort", debug = false, strip = true, debug-assertions = false, overflow-checks = false }
